@@ -55,7 +55,7 @@ export default function Layout({ children }: { children: ReactNode }) {
       <div className={`px-6 py-6 transition-all duration-300 ${collapsed ? 'px-2' : ''}`}>
         {!collapsed && (
           <>
-            <Typography variant="h6" className="text-[var(--accent)] font-bold">CRYPTIC</Typography>
+            <Typography variant="h6" className="text-[var(--accent)] font-black tracking-widest">CRYPTIC</Typography>
             <Typography variant="body2" className="text-slate-300">Tagline bata do bhai!</Typography>
           </>
         )}
