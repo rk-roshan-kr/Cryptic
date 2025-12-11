@@ -87,3 +87,9 @@ temp/
 
 # Local Netlify folder
 .netlify
+
+# Downloaded HTML pages
+ZebPay - CryptoPacks*.html
+BTC to INR*.html
+Wallet*.html
+

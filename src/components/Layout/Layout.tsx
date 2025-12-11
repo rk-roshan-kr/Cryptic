@@ -5,6 +5,8 @@ import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet'
 import PieChartIcon from '@mui/icons-material/PieChart'
 import SettingsIcon from '@mui/icons-material/Settings'
 import TrendingUpIcon from '@mui/icons-material/TrendingUp'
+import ScienceIcon from '@mui/icons-material/Science'
+import PersonIcon from '@mui/icons-material/Person'
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import React from 'react'
@@ -12,7 +14,9 @@ import { NavLink, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useUIStore } from '../../state/uiStore'
 
-const drawerWidth = 260
+import ShowChartIcon from '@mui/icons-material/ShowChart'
+
+const drawerWidth = 200
 const collapsedDrawerWidth = 64
 
 export default function Layout({ children }: { children: ReactNode }) {
@@ -29,7 +33,8 @@ export default function Layout({ children }: { children: ReactNode }) {
   useEffect(() => {
     const isInvestmentRoute = location.pathname.includes('/app/investment') ||
       location.pathname.includes('/app/crypto-fund') ||
-      location.pathname.includes('/app/portfolio')
+      location.pathname.includes('/app/portfolio') ||
+      location.pathname.includes('/app/wallets')
 
     if (isInvestmentRoute) {
       setCollapsed(true)
@@ -40,18 +45,18 @@ export default function Layout({ children }: { children: ReactNode }) {
     { to: '/app/overview', icon: <DashboardIcon sx={{ color: 'primary.main' }} />, label: 'Overview' },
     { to: '/app/wallets', icon: <AccountBalanceWalletIcon sx={{ color: 'primary.main' }} />, label: 'Wallets' },
     { to: '/app/portfolio', icon: <PieChartIcon sx={{ color: 'primary.main' }} />, label: 'Portfolio' },
-    { to: '/app/investment', icon: <TrendingUpIcon sx={{ color: 'primary.main' }} />, label: 'Investment' },
-    { to: '/app/crypto-test', icon: <TrendingUpIcon sx={{ color: 'primary.main' }} />, label: 'Crypto Test' },
-    { to: '/app/settings', icon: <SettingsIcon sx={{ color: 'primary.main' }} />, label: 'Settings' },
+    { to: '/app/investment', icon: <TrendingUpIcon sx={{ color: 'primary.main' }} />, label: 'Invest' },
+    { to: '/app/investment-portfolio', icon: <ShowChartIcon sx={{ color: 'primary.main' }} />, label: 'Active Invs.' },
+    { to: '/app/crypto-test', icon: <ScienceIcon sx={{ color: 'primary.main' }} />, label: 'Crypto Test' },
   ] as const
 
   const drawer = (
-    <div className="h-full flex flex-col bg-[#0f0f10]/80 backdrop-blur-md transition-colors">
+    <div className="h-full flex flex-col bg-gradient-to-b from-[#13141b] to-[#0b0c10] backdrop-blur-md transition-colors border-r border-white/5">
       <div className={`px-6 py-6 transition-all duration-300 ${collapsed ? 'px-2' : ''}`}>
         {!collapsed && (
           <>
-            <Typography variant="h6" className="text-white font-bold">Cryptic</Typography>
-            <Typography variant="body2" className="text-slate-300">Way to the future!</Typography>
+            <Typography variant="h6" className="text-[var(--accent)] font-bold">CRYPTIC</Typography>
+            <Typography variant="body2" className="text-slate-300">Tagline bata do bhai!</Typography>
           </>
         )}
         <IconButton
@@ -90,8 +95,16 @@ export default function Layout({ children }: { children: ReactNode }) {
           </motion.div>
         ))}
       </nav>
-      <div className={`p-4 transition-all duration-300 ${collapsed ? 'px-2' : ''}`}>
-        {!collapsed && <div className="chip bg-[#121214] text-slate-200">v0.1</div>}
+      <div className={`p-4 transition-all duration-300 border-t border-white/5 flex items-center ${collapsed ? 'flex-col gap-4 justify-center' : 'justify-between'}`}>
+        <div className={`flex items-center ${collapsed ? 'flex-col gap-4' : 'gap-3'}`}>
+          <NavLink to="/app/settings" className="text-slate-400 hover:text-white transition-colors" title="Settings">
+            <SettingsIcon sx={{ fontSize: 20 }} />
+          </NavLink>
+          <IconButton size="small" sx={{ color: 'rgb(148, 163, 184)', '&:hover': { color: 'white' }, p: 0 }} title="Profile">
+            <PersonIcon sx={{ fontSize: 20 }} />
+          </IconButton>
+        </div>
+        {!collapsed && <div className="text-[10px] text-slate-500 font-mono tracking-widest">v0.1</div>}
       </div>
     </div>
   )
@@ -133,7 +146,7 @@ export default function Layout({ children }: { children: ReactNode }) {
                 {React.cloneElement(item.icon, { sx: { fontSize: 22, color: 'inherit' } })}
               </div>
               <span className="text-[10px] font-medium tracking-wide">
-                {item.label === 'Overview' ? 'Home' : item.label === 'Investment' ? 'Invest' : item.label}
+                {item.label === 'Overview' ? 'Home' : item.label}
               </span>
             </NavLink>
           ))}

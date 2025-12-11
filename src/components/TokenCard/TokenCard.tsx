@@ -164,7 +164,7 @@ export default function TokenCard({ asset, isExpanded, onToggle }: TokenCardProp
                                         <Typography className="text-white font-semibold text-sm">
                                             {asset.qty.toLocaleString(undefined, { maximumFractionDigits: 4 })}
                                             <span className="text-slate-500 mx-1.5">/</span>
-                                            <span className="text-slate-300">${asset.valueUsd.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                                            <span className="text-slate-300">${asset.valueUsd.toLocaleString(undefined, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</span>
                                         </Typography>
                                     </div>
                                     <div className="flex flex-col items-end">

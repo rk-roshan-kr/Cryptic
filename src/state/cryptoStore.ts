@@ -200,13 +200,6 @@ class CryptoStore {
 export const cryptoStore = new CryptoStore()
 
 // Dev helper: allow backend/console to update balances
-declare global {
-  interface Window {
-    cryptoStore?: any
-    cryptoBalances?: any
-  }
-}
-
 if (typeof window !== 'undefined') {
   window.cryptoStore = {
     get: (s?: CryptoSymbol) => (s ? cryptoStore.get(s) : cryptoStore.getAll()),
@@ -222,6 +215,35 @@ if (typeof window !== 'undefined') {
     get: (s?: CryptoSymbol) => (s ? cryptoStore.get(s) : cryptoStore.getAll()),
     set: (s: CryptoSymbol, v: number) => cryptoStore.set(s, v),
     delta: (s: CryptoSymbol, d: number) => cryptoStore.delta(s, d),
+  }
+
+  window.addMockCoins = (valuePerToken: number = 10000) => {
+    const targets: CryptoSymbol[] = ['BTC', 'ETH', 'SOL', 'BAT', 'SEPOLIA_ETH']
+
+    // Set USDT directly
+    cryptoStore.set('USDT', valuePerToken)
+
+    // Set others based on price
+    targets.forEach(symbol => {
+      // Get price (handle structure from prices.ts)
+      const priceData = window.cryptoPrices?.get(symbol)
+      const price = typeof priceData === 'number' ? priceData : (priceData?.price || 0)
+
+      if (price > 0) {
+        const amount = valuePerToken / price
+        cryptoStore.set(symbol, amount)
+        console.log(`Set ${symbol} to ${amount.toFixed(4)} (${valuePerToken} USD)`)
+      }
+    })
+    console.log('Mock coins added!')
+  }
+}
+
+declare global {
+  interface Window {
+    cryptoStore?: any
+    cryptoBalances?: any
+    addMockCoins?: (valuePerToken?: number) => void
   }
 }
 

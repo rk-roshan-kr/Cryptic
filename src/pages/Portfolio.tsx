@@ -192,7 +192,7 @@ export default function Portfolio() {
                                                 delay={0.5} // Wait for cards
                                             />
                                         ) : (
-                                            `$${totalTreasuryValue.toLocaleString()}`
+                                            `$${totalTreasuryValue.toLocaleString(undefined, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}`
                                         )}
                                     </Typography>
                                 </div>

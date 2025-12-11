@@ -14,6 +14,7 @@ const Settings = React.lazy(() => import('./pages/Settings'))
 const CryptoTest = React.lazy(() => import('./pages/CryptoTest'))
 const Investment = React.lazy(() => import('./pages/Investment'))
 const InvestmentDetail = React.lazy(() => import('./pages/InvestmentDetail'))
+const InvestmentPortfolio = React.lazy(() => import('./pages/InvestmentPortfolio'))
 const MutualFundDetail = React.lazy(() => import('./pages/MutualFundDetail'))
 const Marketplace = React.lazy(() => import('./pages/Marketplace'))
 
@@ -134,6 +135,14 @@ export default function App() {
             element={
               <Layout>
                 <Investment />
+              </Layout>
+            }
+          />
+          <Route
+            path="/app/investment-portfolio"
+            element={
+              <Layout>
+                <InvestmentPortfolio />
               </Layout>
             }
           />

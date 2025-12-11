@@ -1,18 +1,18 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { 
+import {
   TrendingUp, Shield, BarChart3, Network, AlertTriangle, Info,
   Calendar, DollarSign, Activity, Users, Lock, ArrowLeft, Edit3,
   Star, ChevronDown, ChevronUp, ExternalLink, Download, Share2,
   Facebook, Twitter, Linkedin, MessageCircle, Globe, Award,
-  Target, PieChart, LineChart as LineChartIcon, BarChart, 
+  Target, PieChart, LineChart as LineChartIcon, BarChart,
   TrendingDown, Zap, Coins, Wallet, Clock, CheckCircle
 } from 'lucide-react'
 import { investmentWallet } from '../state/investmentWallet'
 import { formatUSD } from '../utils/format'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart as RechartsPieChart, Pie, Cell, BarChart as RechartsBarChart, Bar } from 'recharts'
-import { InvestmentOption } from '../components/Investment/InvestmentOptions'
+import { InvestmentOption } from '../data/mockDataEngine'
 import RiskBadge from '../components/Investment/RiskBadge'
 
 // Investment options data
@@ -49,7 +49,7 @@ const generateHistoricalData = (apy: number, timeRange: string) => {
   let value = 100
   const baseVolatility = apy / 100 * 2.5 // Much higher base volatility
   const cryptoVolatility = 0.15 // Additional crypto-specific volatility
-  
+
   // Determine number of data points based on time range
   let days = 365
   switch (timeRange) {
@@ -60,13 +60,13 @@ const generateHistoricalData = (apy: number, timeRange: string) => {
     case '5Y': days = 1825; break
     case 'ALL': days = 2555; break // ~7 years
   }
-  
+
   for (let i = 0; i < days; i++) {
     // Extreme volatility with multiple factors
     const randomFactor = Math.random() - 0.5
     const volatility = baseVolatility + cryptoVolatility
     const dailyChange = randomFactor * volatility * 8 // 8x multiplier for extreme swings
-    
+
     // Add occasional extreme spikes (crypto-style)
     const spikeChance = Math.random()
     let spikeMultiplier = 1
@@ -75,14 +75,14 @@ const generateHistoricalData = (apy: number, timeRange: string) => {
     } else if (spikeChance < 0.05) {
       spikeMultiplier = 0.3 // 70% crash
     }
-    
+
     value = value * (1 + (dailyChange * spikeMultiplier) / 100)
     const date = new Date(Date.now() - (days - i) * 24 * 60 * 60 * 1000)
-    
+
     data.push({
-      date: date.toLocaleDateString('en-US', { 
-        month: 'short', 
-        year: '2-digit' 
+      date: date.toLocaleDateString('en-US', {
+        month: 'short',
+        year: '2-digit'
       }),
       value: Math.max(value, 10), // Much lower minimum for extreme drops
       fullDate: date.toISOString()
@@ -146,7 +146,7 @@ export default function InvestmentDetail() {
     const amount = params.get('amount')
     const optionId = params.get('option')
     const fromWallet = params.get('fromWallet')
-    
+
     if (amount) {
       const numAmount = parseFloat(amount)
       setInvestmentAmount(numAmount)
@@ -172,9 +172,9 @@ export default function InvestmentDetail() {
       setTimeout(() => {
         const performanceSection = document.getElementById('performance-section')
         if (performanceSection) {
-          performanceSection.scrollIntoView({ 
-            behavior: 'smooth', 
-            block: 'start' 
+          performanceSection.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
           })
         }
       }, 500) // Small delay to ensure component is rendered
@@ -195,13 +195,13 @@ export default function InvestmentDetail() {
       amount: investmentType === 'one-time' ? investmentAmount : sipAmount,
       type: investmentType
     })
-    
+
     setTimeout(() => {
-      navigate('/app/investment', { 
-        state: { 
-          success: true, 
-          message: `Successfully invested ${formatUSD(investmentType === 'one-time' ? investmentAmount : sipAmount)} in ${selectedOption?.name}` 
-        } 
+      navigate('/app/investment', {
+        state: {
+          success: true,
+          message: `Successfully invested ${formatUSD(investmentType === 'one-time' ? investmentAmount : sipAmount)} in ${selectedOption?.name}`
+        }
       })
     }, 1000)
   }
@@ -226,7 +226,7 @@ export default function InvestmentDetail() {
       <div className="min-h-screen bg-gradient-to-br from-[#0f1230] to-[#1b1f4a] flex items-center justify-center">
         <div className="text-center">
           <div className="text-white text-xl mb-4">Investment Option Not Found</div>
-          <button 
+          <button
             onClick={handleBack}
             className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
@@ -244,7 +244,7 @@ export default function InvestmentDetail() {
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <button 
+              <button
                 onClick={handleBack}
                 className="p-2 hover:bg-white/10 rounded-lg transition-colors"
               >
@@ -269,136 +269,135 @@ export default function InvestmentDetail() {
 
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                     {/* Main Content - Left Side */}
-           <div className="lg:col-span-2 space-y-8">
-             {/* Performance Chart - Moved to top */}
-             <motion.div 
-               id="performance-section"
-               initial={{ opacity: 0, y: 20 }}
-               animate={{ opacity: 1, y: 0 }}
-               transition={{ delay: 0.1 }}
-               className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 overflow-hidden"
-             >
-               <div className="p-6">
-                 <div className="flex items-center justify-between mb-6">
-                   <h2 className="text-white text-xl font-semibold">Performance</h2>
-                   <button 
-                     onClick={() => toggleSection('performance')}
-                     className="p-1 hover:bg-white/10 rounded transition-colors"
-                   >
-                     {expandedSections.has('performance') ? 
-                       <ChevronUp className="w-5 h-5 text-white" /> : 
-                       <ChevronDown className="w-5 h-5 text-white" />
-                     }
-                   </button>
-                 </div>
-                 
-                 <AnimatePresence>
-                   {expandedSections.has('performance') && (
-                     <motion.div
-                       initial={{ height: 0, opacity: 0 }}
-                       animate={{ height: 'auto', opacity: 1 }}
-                       exit={{ height: 0, opacity: 0 }}
-                       transition={{ duration: 0.3 }}
-                       className="space-y-6"
-                     >
-                       {/* Chart */}
-                       <div className="h-80">
-                         <ResponsiveContainer width="100%" height="100%">
-                           <LineChart data={historicalData}>
-                             <XAxis 
-                               dataKey="date" 
-                               hide 
-                               tick={{ fill: '#94A3B8' }}
-                             />
-                             <YAxis 
-                               hide 
-                               tick={{ fill: '#94A3B8' }}
-                             />
-                             <Tooltip 
-                               contentStyle={{ 
-                                 backgroundColor: '#1E293B', 
-                                 border: '1px solid #334155',
-                                 borderRadius: '8px',
-                                 color: '#F1F5F9'
-                               }}
-                               formatter={(value: any) => [`$${value.toFixed(2)}`, 'NAV']}
-                               labelFormatter={(label) => `Date: ${label}`}
-                             />
-                             <Line 
-                               type="monotone" 
-                               dataKey="value" 
-                               stroke="#10B981" 
-                               strokeWidth={3} 
-                               dot={false}
-                               activeDot={{ r: 6, fill: '#10B981', stroke: '#fff', strokeWidth: 2 }}
-                             />
-                           </LineChart>
-                         </ResponsiveContainer>
-                       </div>
-
-                       {/* Time Range Selector - Moved below chart */}
-                       <div className="flex justify-center gap-2">
-                         {['1M', '6M', '1Y', '3Y', '5Y', 'ALL'].map((range) => (
-                           <button
-                             key={range}
-                             onClick={() => setTimeRange(range)}
-                             className={`px-4 py-2 text-sm rounded-lg transition-colors ${
-                               timeRange === range 
-                                 ? 'bg-green-500 text-black font-semibold' 
-                                 : 'bg-white/10 text-slate-400 hover:text-white hover:bg-white/20'
-                             }`}
-                           >
-                             {range}
-                           </button>
-                         ))}
-                       </div>
-
-                       {/* Performance Stats */}
-                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                         <div className="bg-white/5 rounded-lg p-4 text-center">
-                           <div className="text-slate-400 text-sm">1 Month</div>
-                           <div className="text-green-400 text-lg font-bold">+2.3%</div>
-                         </div>
-                         <div className="bg-white/5 rounded-lg p-4 text-center">
-                           <div className="text-slate-400 text-sm">3 Months</div>
-                           <div className="text-green-400 text-lg font-bold">+6.8%</div>
-                         </div>
-                         <div className="bg-white/5 rounded-lg p-4 text-center">
-                           <div className="text-slate-400 text-sm">6 Months</div>
-                           <div className="text-green-400 text-lg font-bold">+12.4%</div>
-                         </div>
-                         <div className="bg-white/5 rounded-lg p-4 text-center">
-                           <div className="text-slate-400 text-sm">1 Year</div>
-                           <div className="text-green-400 text-lg font-bold">+{selectedOption.apy}%</div>
-                         </div>
-                       </div>
-                     </motion.div>
-                   )}
-                 </AnimatePresence>
-               </div>
-             </motion.div>
-
-             {/* Fund Overview */}
-             <motion.div 
-               initial={{ opacity: 0, y: 20 }}
-               animate={{ opacity: 1, y: 0 }}
-               className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 overflow-hidden"
-             >
+          {/* Main Content - Left Side */}
+          <div className="lg:col-span-2 space-y-8">
+            {/* Performance Chart - Moved to top */}
+            <motion.div
+              id="performance-section"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 overflow-hidden"
+            >
               <div className="p-6">
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-white text-xl font-semibold">Fund Overview</h2>
-                  <button 
-                    onClick={() => toggleSection('overview')}
+                  <h2 className="text-white text-xl font-semibold">Performance</h2>
+                  <button
+                    onClick={() => toggleSection('performance')}
                     className="p-1 hover:bg-white/10 rounded transition-colors"
                   >
-                    {expandedSections.has('overview') ? 
-                      <ChevronUp className="w-5 h-5 text-white" /> : 
+                    {expandedSections.has('performance') ?
+                      <ChevronUp className="w-5 h-5 text-white" /> :
                       <ChevronDown className="w-5 h-5 text-white" />
                     }
                   </button>
                 </div>
-                
+
+                <AnimatePresence>
+                  {expandedSections.has('performance') && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="space-y-6"
+                    >
+                      {/* Chart */}
+                      <div className="h-80">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <LineChart data={historicalData}>
+                            <XAxis
+                              dataKey="date"
+                              hide
+                              tick={{ fill: '#94A3B8' }}
+                            />
+                            <YAxis
+                              hide
+                              tick={{ fill: '#94A3B8' }}
+                            />
+                            <Tooltip
+                              contentStyle={{
+                                backgroundColor: '#1E293B',
+                                border: '1px solid #334155',
+                                borderRadius: '8px',
+                                color: '#F1F5F9'
+                              }}
+                              formatter={(value: any) => [`$${value.toFixed(2)}`, 'NAV']}
+                              labelFormatter={(label) => `Date: ${label}`}
+                            />
+                            <Line
+                              type="monotone"
+                              dataKey="value"
+                              stroke="#10B981"
+                              strokeWidth={3}
+                              dot={false}
+                              activeDot={{ r: 6, fill: '#10B981', stroke: '#fff', strokeWidth: 2 }}
+                            />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+
+                      {/* Time Range Selector - Moved below chart */}
+                      <div className="flex justify-center gap-2">
+                        {['1M', '6M', '1Y', '3Y', '5Y', 'ALL'].map((range) => (
+                          <button
+                            key={range}
+                            onClick={() => setTimeRange(range)}
+                            className={`px-4 py-2 text-sm rounded-lg transition-colors ${timeRange === range
+                                ? 'bg-green-500 text-black font-semibold'
+                                : 'bg-white/10 text-slate-400 hover:text-white hover:bg-white/20'
+                              }`}
+                          >
+                            {range}
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Performance Stats */}
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="bg-white/5 rounded-lg p-4 text-center">
+                          <div className="text-slate-400 text-sm">1 Month</div>
+                          <div className="text-green-400 text-lg font-bold">+2.3%</div>
+                        </div>
+                        <div className="bg-white/5 rounded-lg p-4 text-center">
+                          <div className="text-slate-400 text-sm">3 Months</div>
+                          <div className="text-green-400 text-lg font-bold">+6.8%</div>
+                        </div>
+                        <div className="bg-white/5 rounded-lg p-4 text-center">
+                          <div className="text-slate-400 text-sm">6 Months</div>
+                          <div className="text-green-400 text-lg font-bold">+12.4%</div>
+                        </div>
+                        <div className="bg-white/5 rounded-lg p-4 text-center">
+                          <div className="text-slate-400 text-sm">1 Year</div>
+                          <div className="text-green-400 text-lg font-bold">+{selectedOption.apy}%</div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </motion.div>
+
+            {/* Fund Overview */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 overflow-hidden"
+            >
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-white text-xl font-semibold">Fund Overview</h2>
+                  <button
+                    onClick={() => toggleSection('overview')}
+                    className="p-1 hover:bg-white/10 rounded transition-colors"
+                  >
+                    {expandedSections.has('overview') ?
+                      <ChevronUp className="w-5 h-5 text-white" /> :
+                      <ChevronDown className="w-5 h-5 text-white" />
+                    }
+                  </button>
+                </div>
+
                 <AnimatePresence>
                   {expandedSections.has('overview') && (
                     <motion.div
@@ -432,8 +431,8 @@ export default function InvestmentDetail() {
                       <div className="bg-white/5 rounded-lg p-4">
                         <h3 className="text-white font-semibold mb-2">Investment Strategy</h3>
                         <p className="text-slate-300 text-sm leading-relaxed">
-                          {selectedOption.description}. This fund employs advanced yield optimization strategies 
-                          across multiple DeFi protocols, staking mechanisms, and liquidity pools to maximize 
+                          {selectedOption.description}. This fund employs advanced yield optimization strategies
+                          across multiple DeFi protocols, staking mechanisms, and liquidity pools to maximize
                           returns while maintaining a balanced risk profile.
                         </p>
                       </div>
@@ -481,10 +480,10 @@ export default function InvestmentDetail() {
               </div>
             </motion.div>
 
-                         
+
 
             {/* Portfolio Allocation */}
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
@@ -493,17 +492,17 @@ export default function InvestmentDetail() {
               <div className="p-6">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-white text-xl font-semibold">Portfolio Allocation</h2>
-                  <button 
+                  <button
                     onClick={() => toggleSection('portfolio')}
                     className="p-1 hover:bg-white/10 rounded transition-colors"
                   >
-                    {expandedSections.has('portfolio') ? 
-                      <ChevronUp className="w-5 h-5 text-white" /> : 
+                    {expandedSections.has('portfolio') ?
+                      <ChevronUp className="w-5 h-5 text-white" /> :
                       <ChevronDown className="w-5 h-5 text-white" />
                     }
                   </button>
                 </div>
-                
+
                 <AnimatePresence>
                   {expandedSections.has('portfolio') && (
                     <motion.div
@@ -531,9 +530,9 @@ export default function InvestmentDetail() {
                                   <Cell key={`cell-${index}`} fill={entry.color} />
                                 ))}
                               </Pie>
-                              <Tooltip 
-                                contentStyle={{ 
-                                  backgroundColor: '#1E293B', 
+                              <Tooltip
+                                contentStyle={{
+                                  backgroundColor: '#1E293B',
                                   border: '1px solid #334155',
                                   borderRadius: '8px',
                                   color: '#F1F5F9'
@@ -548,8 +547,8 @@ export default function InvestmentDetail() {
                           {portfolioData.map((item, index) => (
                             <div key={index} className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
                               <div className="flex items-center gap-3">
-                                <div 
-                                  className="w-4 h-4 rounded-full" 
+                                <div
+                                  className="w-4 h-4 rounded-full"
                                   style={{ backgroundColor: item.color }}
                                 />
                                 <span className="text-white text-sm">{item.name}</span>
@@ -566,7 +565,7 @@ export default function InvestmentDetail() {
             </motion.div>
 
             {/* Fund Manager */}
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
@@ -575,17 +574,17 @@ export default function InvestmentDetail() {
               <div className="p-6">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-white text-xl font-semibold">Fund Manager</h2>
-                  <button 
+                  <button
                     onClick={() => toggleSection('manager')}
                     className="p-1 hover:bg-white/10 rounded transition-colors"
                   >
-                    {expandedSections.has('manager') ? 
-                      <ChevronUp className="w-5 h-5 text-white" /> : 
+                    {expandedSections.has('manager') ?
+                      <ChevronUp className="w-5 h-5 text-white" /> :
                       <ChevronDown className="w-5 h-5 text-white" />
                     }
                   </button>
                 </div>
-                
+
                 <AnimatePresence>
                   {expandedSections.has('manager') && (
                     <motion.div
@@ -596,8 +595,8 @@ export default function InvestmentDetail() {
                       className="space-y-6"
                     >
                       <div className="flex items-start gap-6">
-                        <img 
-                          src={fundManager.avatar} 
+                        <img
+                          src={fundManager.avatar}
                           alt={fundManager.name}
                           className="w-20 h-20 rounded-full object-cover"
                         />
@@ -631,7 +630,7 @@ export default function InvestmentDetail() {
             </motion.div>
 
             {/* Holdings & Top Investments */}
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
@@ -640,17 +639,17 @@ export default function InvestmentDetail() {
               <div className="p-6">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-white text-xl font-semibold">Top Holdings</h2>
-                  <button 
+                  <button
                     onClick={() => toggleSection('holdings')}
                     className="p-1 hover:bg-white/10 rounded transition-colors"
                   >
-                    {expandedSections.has('holdings') ? 
-                      <ChevronUp className="w-5 h-5 text-white" /> : 
+                    {expandedSections.has('holdings') ?
+                      <ChevronUp className="w-5 h-5 text-white" /> :
                       <ChevronDown className="w-5 h-5 text-white" />
                     }
                   </button>
                 </div>
-                
+
                 <AnimatePresence>
                   {expandedSections.has('holdings') && (
                     <motion.div
@@ -731,7 +730,7 @@ export default function InvestmentDetail() {
             </motion.div>
 
             {/* Fund House & Protocol Details */}
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
@@ -740,17 +739,17 @@ export default function InvestmentDetail() {
               <div className="p-6">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-white text-xl font-semibold">Fund House & Protocol Details</h2>
-                  <button 
+                  <button
                     onClick={() => toggleSection('fundhouse')}
                     className="p-1 hover:bg-white/10 rounded transition-colors"
                   >
-                    {expandedSections.has('fundhouse') ? 
-                      <ChevronUp className="w-5 h-5 text-white" /> : 
+                    {expandedSections.has('fundhouse') ?
+                      <ChevronUp className="w-5 h-5 text-white" /> :
                       <ChevronDown className="w-5 h-5 text-white" />
                     }
                   </button>
                 </div>
-                
+
                 <AnimatePresence>
                   {expandedSections.has('fundhouse') && (
                     <motion.div
@@ -816,7 +815,7 @@ export default function InvestmentDetail() {
             </motion.div>
 
             {/* Investment Objective */}
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.6 }}
@@ -825,17 +824,17 @@ export default function InvestmentDetail() {
               <div className="p-6">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-white text-xl font-semibold">Investment Objective</h2>
-                  <button 
+                  <button
                     onClick={() => toggleSection('objective')}
                     className="p-1 hover:bg-white/10 rounded transition-colors"
                   >
-                    {expandedSections.has('objective') ? 
-                      <ChevronUp className="w-5 h-5 text-white" /> : 
+                    {expandedSections.has('objective') ?
+                      <ChevronUp className="w-5 h-5 text-white" /> :
                       <ChevronDown className="w-5 h-5 text-white" />
                     }
                   </button>
                 </div>
-                
+
                 <AnimatePresence>
                   {expandedSections.has('objective') && (
                     <motion.div
@@ -847,8 +846,8 @@ export default function InvestmentDetail() {
                     >
                       <div className="bg-white/5 rounded-lg p-4">
                         <p className="text-slate-300 text-sm leading-relaxed mb-4">
-                          The fund seeks to generate optimized yield by strategically allocating capital across 
-                          high-performing DeFi protocols, including liquidity provision, lending, and yield farming 
+                          The fund seeks to generate optimized yield by strategically allocating capital across
+                          high-performing DeFi protocols, including liquidity provision, lending, and yield farming
                           strategies while maintaining risk-adjusted returns.
                         </p>
                         <div className="flex justify-between items-center">
@@ -900,7 +899,7 @@ export default function InvestmentDetail() {
             </motion.div>
 
             {/* Risk & Disclaimers */}
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.7 }}
@@ -909,17 +908,17 @@ export default function InvestmentDetail() {
               <div className="p-6">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-white text-xl font-semibold">Risk & Disclaimers</h2>
-                  <button 
+                  <button
                     onClick={() => toggleSection('risk')}
                     className="p-1 hover:bg-white/10 rounded transition-colors"
                   >
-                    {expandedSections.has('risk') ? 
-                      <ChevronUp className="w-5 h-5 text-white" /> : 
+                    {expandedSections.has('risk') ?
+                      <ChevronUp className="w-5 h-5 text-white" /> :
                       <ChevronDown className="w-5 h-5 text-white" />
                     }
                   </button>
                 </div>
-                
+
                 <AnimatePresence>
                   {expandedSections.has('risk') && (
                     <motion.div
@@ -935,8 +934,8 @@ export default function InvestmentDetail() {
                           <div>
                             <h3 className="text-yellow-400 font-semibold mb-2">Investment Risks</h3>
                             <p className="text-slate-300 text-sm leading-relaxed">
-                              Crypto investments are subject to market risk. Returns are variable and not guaranteed. 
-                              Past performance does not indicate future results. The value of investments can go up 
+                              Crypto investments are subject to market risk. Returns are variable and not guaranteed.
+                              Past performance does not indicate future results. The value of investments can go up
                               or down and you may lose some or all of your investment.
                             </p>
                           </div>
@@ -966,7 +965,7 @@ export default function InvestmentDetail() {
 
           {/* Investment Summary - Right Side */}
           <div className="lg:col-span-1">
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.5 }}
@@ -977,17 +976,15 @@ export default function InvestmentDetail() {
                 <div className="flex">
                   <button
                     onClick={() => setInvestmentType('monthly')}
-                    className={`flex-1 py-3 px-4 text-sm font-medium transition-colors ${
-                      investmentType === 'monthly' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-slate-400 hover:text-white'
-                    }`}
+                    className={`flex-1 py-3 px-4 text-sm font-medium transition-colors ${investmentType === 'monthly' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-slate-400 hover:text-white'
+                      }`}
                   >
                     MONTHLY SIP
                   </button>
                   <button
                     onClick={() => setInvestmentType('one-time')}
-                    className={`flex-1 py-3 px-4 text-sm font-medium transition-colors ${
-                      investmentType === 'one-time' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-slate-400 hover:text-white'
-                    }`}
+                    className={`flex-1 py-3 px-4 text-sm font-medium transition-colors ${investmentType === 'one-time' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-slate-400 hover:text-white'
+                      }`}
                   >
                     ONE-TIME
                   </button>
@@ -1071,7 +1068,7 @@ export default function InvestmentDetail() {
 
                 {/* Action Button */}
                 <div className="flex gap-3">
-                  <button 
+                  <button
                     onClick={handleInvest}
                     className="w-full py-3 px-4 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors"
                   >
