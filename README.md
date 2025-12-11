@@ -1,4 +1,4 @@
-# Cryptic: The Ultimate DAO Treasury Dashboard
+# Cryptic: The Ultimate Crypto Treasury Dashboard
 
 
 

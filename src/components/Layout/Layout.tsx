@@ -27,9 +27,9 @@ export default function Layout({ children }: { children: ReactNode }) {
 
   // Auto-collapse sidebar when on investment-related routes
   useEffect(() => {
-    const isInvestmentRoute = location.pathname.includes('/app/investment') || 
-                             location.pathname.includes('/app/crypto-fund')
-    
+    const isInvestmentRoute = location.pathname.includes('/app/investment') ||
+      location.pathname.includes('/app/crypto-fund')
+
     if (isInvestmentRoute) {
       setCollapsed(true)
     }
@@ -50,7 +50,7 @@ export default function Layout({ children }: { children: ReactNode }) {
       <div className={`px-6 py-6 transition-all duration-300 ${collapsed ? 'px-2' : ''}`}>
         {!collapsed && (
           <>
-            <Typography variant="h6" className="text-white font-bold">DAO Treasury</Typography>
+            <Typography variant="h6" className="text-white font-bold">Cryptic</Typography>
             <Typography variant="body2" className="text-slate-300">Management Dashboard</Typography>
           </>
         )}
@@ -114,7 +114,7 @@ export default function Layout({ children }: { children: ReactNode }) {
         <GooeyNav items={items} initialActiveIndex={items.findIndex(item => item.href === location.pathname)} />
       ) : (
         <>
-          
+
           <Box component="nav" sx={{ width: { sm: currentDrawerWidth }, flexShrink: { sm: 0 }, position: 'fixed', height: '100vh', zIndex: (theme) => theme.zIndex.appBar - 1 }} aria-label="mailbox folders">
             <Drawer
               variant="temporary"

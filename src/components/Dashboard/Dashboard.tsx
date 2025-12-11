@@ -1,6 +1,6 @@
-import { useMemo, useEffect, useState } from 'react'
-import { Card, CardContent, Typography, Button, Chip, Avatar, Box, Grid } from '@mui/material'
-import { TrendingUp, TrendingDown, ArrowUpward, ArrowDownward, Visibility, VisibilityOff } from '@mui/icons-material'
+import { useEffect, useState } from 'react'
+import { Card, CardContent, Typography, Button, Chip, Avatar, Grid } from '@mui/material'
+import { TrendingUp, TrendingDown, ArrowUpward, Visibility, VisibilityOff } from '@mui/icons-material'
 import { cryptoStore, type CryptoSymbol } from '../../state/cryptoStore'
 import { cryptoMeta } from '../../state/cryptoMeta'
 import { prices } from '../../state/prices'
@@ -13,38 +13,46 @@ export default function Dashboard() {
   const [recentTransactions, setRecentTransactions] = useState<Transaction[]>([])
   const [investmentBalance, setInvestmentBalance] = useState(investmentWallet.getBalance())
   const [hideAmounts, setHideAmounts] = useState(false)
+  const [marketData, setMarketData] = useState(prices.getAll())
 
   // Subscribe to crypto balance updates
   useEffect(() => {
     setBalances(cryptoStore.getAll())
-    
+
     const unsubscribe = cryptoStore.subscribeToBalances((newBalances) => {
       setBalances(newBalances)
     })
-    
+
     return unsubscribe
   }, [])
 
   // Subscribe to transaction updates
   useEffect(() => {
     setRecentTransactions(transactionsStore.getRecent(5))
-    
+
     const unsubscribe = transactionsStore.subscribe((transactions) => {
       setRecentTransactions(transactions.slice(0, 5))
     })
-    
+
     return unsubscribe
   }, [])
 
   // Subscribe to investment wallet updates
   useEffect(() => {
     setInvestmentBalance(investmentWallet.getBalance())
-    
+
     const unsubscribe = investmentWallet.subscribe((balance) => {
       setInvestmentBalance(balance)
     })
-    
+
     return unsubscribe
+  }, [])
+
+  // Subscribe to price updates
+  useEffect(() => {
+    setMarketData(prices.getAll())
+    const unsubscribe = prices.subscribe(setMarketData)
+    return () => { unsubscribe() }
   }, [])
 
   const portfolio = [
@@ -57,33 +65,17 @@ export default function Dashboard() {
   ] as const
 
   const assets = portfolio.map(p => {
-    const usd = prices.get(p.symbol as CryptoSymbol)
+    const data = marketData[p.symbol as CryptoSymbol] || { price: 0, change24h: 0 }
+    const usd = data.price
     const valueUsd = Math.max(0, p.qty * usd)
+
     return {
       symbol: p.symbol,
       name: cryptoMeta[p.symbol as CryptoSymbol]?.name || p.name,
       logo: cryptoMeta[p.symbol as CryptoSymbol]?.icon || '',
       qty: p.qty,
       valueUsd,
-      change24hPercent: (() => {
-        // Generate extreme volatility for 24h changes
-        const baseVolatility = 0.4 // High base volatility
-        const cryptoVolatility = 0.2 // Additional crypto-specific volatility
-        const randomFactor = Math.random() - 0.5
-        const volatility = baseVolatility + cryptoVolatility
-        const dailyChange = randomFactor * volatility * 15 // 15x multiplier for extreme swings
-        
-        // Add occasional extreme spikes (crypto-style)
-        const spikeChance = Math.random()
-        let spikeMultiplier = 1
-        if (spikeChance > 0.95) {
-          spikeMultiplier = 5 // 500% spike
-        } else if (spikeChance < 0.05) {
-          spikeMultiplier = 0.1 // 90% crash
-        }
-        
-        return (dailyChange * spikeMultiplier) * 100 // Convert to percentage
-      })(), // Mock data with extreme volatility
+      change24hPercent: data.change24h,
     }
   })
 
@@ -94,8 +86,8 @@ export default function Dashboard() {
 
   const formatAmount = (amount: number) => {
     if (hideAmounts) return '****'
-    return amount.toLocaleString('en-US', { 
-      style: 'currency', 
+    return amount.toLocaleString('en-US', {
+      style: 'currency',
       currency: 'USD',
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
@@ -116,7 +108,7 @@ export default function Dashboard() {
           <div className="max-w-7xl mx-auto">
             <div className="text-center mb-8">
               <Typography variant="h2" className="text-white font-bold mb-4" style={{ textShadow: '0 0 20px rgba(59,130,246,0.5)' }}>
-                DAO Treasury Dashboard
+                Cryptic
               </Typography>
               <Typography variant="h6" className="text-slate-300 mb-6">
                 Manage your digital assets with precision and insight
@@ -233,7 +225,7 @@ export default function Dashboard() {
               </Card>
             </Grid>
           </Grid>
-          
+
           {/* Market Overview */}
           <div className="mb-8">
             <Typography variant="h5" className="text-white font-bold mb-4">Market Overview</Typography>
@@ -243,7 +235,7 @@ export default function Dashboard() {
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-3">
-                        <div 
+                        <div
                           className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
                           style={{ backgroundColor: cryptoMeta[asset.symbol as CryptoSymbol]?.color || '#60a5fa' }}
                         >
@@ -254,7 +246,7 @@ export default function Dashboard() {
                           <Typography className="text-slate-400 text-sm">{asset.symbol}</Typography>
                         </div>
                       </div>
-                      <Chip 
+                      <Chip
                         label={`${asset.change24hPercent >= 0 ? '+' : ''}${asset.change24hPercent.toFixed(2)}%`}
                         color={asset.change24hPercent >= 0 ? 'success' : 'error'}
                         size="small"
@@ -295,9 +287,9 @@ export default function Dashboard() {
                     recentTransactions.map((tx) => (
                       <div key={tx.id} className="flex items-center justify-between p-4 bg-slate-700/30 rounded-lg">
                         <div className="flex items-center gap-4">
-                          <Avatar 
-                            sx={{ 
-                              width: 40, 
+                          <Avatar
+                            sx={{
+                              width: 40,
                               height: 40,
                               backgroundColor: cryptoMeta[tx.coin as CryptoSymbol]?.color || '#60a5fa'
                             }}
@@ -353,5 +345,3 @@ export default function Dashboard() {
     </div>
   )
 }
-
-
