@@ -1,17 +1,60 @@
-import { useMemo, useEffect, useState } from 'react'
-import { Card, CardContent, Typography, Chip, Avatar, Divider } from '@mui/material'
+import { useMemo, useEffect, useState, useCallback, useRef } from 'react'
+import { Card, CardContent, Typography, Chip, Avatar, Divider, useTheme, useMediaQuery } from '@mui/material'
 import InvestmentChart from '../components/InvestmentChart/InvestmentChart'
 import TokenCard from '../components/TokenCard/TokenCard'
+import { RollingNumber } from '../components/RollingNumber'
 import { mockEthernet } from '../data/ethernet.js'
 import { cryptoStore, type CryptoSymbol } from '../state/cryptoStore'
 import { cryptoMeta } from '../state/cryptoMeta'
 import { prices } from '../state/prices'
 import { transactionsStore, type Transaction } from '../state/transactions'
-import { motion } from 'framer-motion'
+import { motion, useMotionValue, useTransform, animate, AnimatePresence } from 'framer-motion'
+import { useUIStore } from '../state/uiStore'
+import { speedometerWoosh, thanosReverse, containerStagger, fadeInUp } from '../utils/animations'
+
+
 
 export default function Portfolio() {
     const [recentTransactions, setRecentTransactions] = useState<Transaction[]>([])
     const [balances, setBalances] = useState(cryptoStore.getAll())
+    const [expandedAsset, setExpandedAsset] = useState<string | null>(null)
+    const [introAsset, setIntroAsset] = useState<string | null>(null) // For speedometer effect
+
+    // 1. Global UI Store
+    const { setHoveredAsset, hoveredAsset, showCinematicIntro } = useUIStore()
+
+    // 2. Mobile & Hover Logic Setup
+    const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+    const theme = useTheme()
+    const isMobile = useMediaQuery(theme.breakpoints.down('lg'))
+
+    // 3. Smart Hover Handler
+    // 3. Smart Hover Handler (Sticky: Instant On, Delayed Off)
+    const handleHover = useCallback((symbol: string | null) => {
+        if (isMobile) return
+
+        if (hoverTimer.current) {
+            clearTimeout(hoverTimer.current)
+            hoverTimer.current = null
+        }
+
+        if (symbol) {
+            // Case A: Moving to a new coin (Instant)
+            setHoveredAsset(symbol)
+        } else {
+            // Case B: Moving to empty space (Delayed Clear to prevent jitter)
+            hoverTimer.current = setTimeout(() => {
+                setHoveredAsset(null)
+            }, 200) // 200ms grace period
+        }
+    }, [isMobile, setHoveredAsset])
+
+    // Cleanup timer
+    useEffect(() => {
+        return () => {
+            if (hoverTimer.current) clearTimeout(hoverTimer.current)
+        }
+    }, [])
 
     // Subscribe to transaction updates
     useEffect(() => {
@@ -89,6 +132,35 @@ export default function Portfolio() {
         return (dailyChange * spikeMultiplier) * 100 // Convert to percentage
     }, [])
 
+    // --- Cinematic: Speedometer Sweep Effect ---
+    useEffect(() => {
+        if (!showCinematicIntro || tokenAllocations.length === 0) return
+
+        const symbols = tokenAllocations.map(t => t.symbol)
+        const totalSteps = symbols.length // Single, elegant pass
+        let interval: ReturnType<typeof setInterval>
+
+        // Delay start to match chart entrance (0.8s)
+        const startTimer = setTimeout(() => {
+            let index = 0
+            // Sweep: Gentle, elegant presentation (250ms per item)
+            interval = setInterval(() => {
+                setIntroAsset(symbols[index])
+                index++
+
+                if (index >= totalSteps) {
+                    clearInterval(interval)
+                    setTimeout(() => setIntroAsset(null), 300) // Smooth exit
+                }
+            }, 250)
+        }, 800)
+
+        return () => {
+            clearTimeout(startTimer)
+            if (interval) clearInterval(interval)
+        }
+    }, [showCinematicIntro, tokenAllocations.length])
+
     return (
         <motion.div
             className="space-y-6 text-coolgray dark:text-slate-300 h-[calc(100vh-100px)] overflow-y-auto snap-y snap-mandatory pb-32 no-scrollbar"
@@ -113,7 +185,15 @@ export default function Portfolio() {
                                         className="text-white font-bold mt-1"
                                         style={{ textShadow: '0 0 12px rgba(250,204,21,0.25)' }}
                                     >
-                                        ${totalTreasuryValue.toLocaleString()}
+                                        {showCinematicIntro ? (
+                                            <RollingNumber
+                                                value={totalTreasuryValue}
+                                                prefix="$"
+                                                delay={0.5} // Wait for cards
+                                            />
+                                        ) : (
+                                            `$${totalTreasuryValue.toLocaleString()}`
+                                        )}
                                     </Typography>
                                 </div>
                                 <Chip label={(totalChange >= 0 ? '+' : '') + totalChange.toFixed(2) + ' 24h'} color={totalChange >= 0 ? 'success' : 'error'} className="rounded-xl" />
@@ -128,9 +208,9 @@ export default function Portfolio() {
                                 <Typography className="text-xs text-slate-400">tracked</Typography>
                             </div>
                             <div className="flex -space-x-2 mt-3">
-                                {recentTransactions.slice(0, 5).map((tx) => (
-                                    <Avatar key={tx.id} sx={{ width: 28, height: 28 }} className="ring-2 ring-white">
-                                        {tx.coin.charAt(0)}
+                                {assets.filter(a => a.valueUsd > 0).slice(0, 5).map((asset) => (
+                                    <Avatar key={asset.symbol} src={asset.logo} sx={{ width: 28, height: 28 }} className="ring-2 ring-white">
+                                        {!asset.logo && asset.symbol.charAt(0)}
                                     </Avatar>
                                 ))}
                             </div>
@@ -153,31 +233,80 @@ export default function Portfolio() {
                 transition={{ duration: 0.6, delay: 0.2 }}
             >
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 min-w-0 h-auto lg:h-[500px]">
-                    {/* Chart Section */}
-                    <Card className="card-base min-w-0 flex flex-col h-full min-h-[85vh] lg:min-h-0">
-                        <CardContent className="h-full flex flex-col">
-                            <div className="flex items-center justify-between mb-2">
+                    {/* Chart & Legend Container - Expansive Version */}
+                    {/* Chart & Legend Container - Expansive & Centered */}
+                    <Card className="card-base min-w-0 h-auto">
+                        {/* SAFETY NET: Clearing hover when leaving the main container area */}
+                        <CardContent
+                            className="flex flex-col h-full"
+                            onMouseLeave={() => handleHover(null)}
+                        >
+                            <div className="flex items-center justify-between mb-8">
                                 <Typography variant="h6" className="text-white">Portfolio Allocation</Typography>
-                                <span className="chip" style={{ backgroundColor: 'var(--accent-soft)', color: 'var(--accent)' }}>Donut</span>
+                                <div className="flex items-center gap-2">
+
+                                    <span className="chip" style={{ backgroundColor: 'var(--accent-soft)', color: 'var(--accent)' }}>Donut</span>
+                                </div>
                             </div>
 
-                            <div className="flex-1 flex flex-col sm:flex-row items-center justify-center gap-8">
-                                {/* Chart Left - Expanded */}
-                                <div className="w-full max-w-[360px] aspect-square flex-shrink-0 relative flex items-center justify-center">
-                                    <InvestmentChart data={tokenAllocations} />
-                                </div>
+                            {/* Main Content: Flex-row on desktop, Centered Vertically */}
+                            <div className="flex flex-col lg:flex-row items-center justify-center gap-8 lg:gap-12">
 
-                                {/* Legend Right - Hidden Scrollbar & Padding */}
-                                <div className="flex-1 w-full space-y-4 overflow-y-auto no-scrollbar pr-2 pb-4">
-                                    {tokenAllocations.map(a => (
-                                        <div key={a.symbol} className="flex items-center justify-between group cursor-default">
-                                            <div className="flex items-center gap-3">
-                                                <span className="w-3 h-3 rounded-full ring-2 ring-white/10" style={{ backgroundColor: a.color }} />
-                                                <span className="text-sm font-medium text-slate-300 group-hover:text-white transition-colors truncate max-w-[140px]" title={a.symbol}>{a.symbol}</span>
-                                            </div>
-                                            <span className="text-sm font-bold text-white tabular-nums">{a.percent}%</span>
-                                        </div>
-                                    ))}
+                                {/* Interactive Chart - Cinematic Wrapper */}
+                                <motion.div
+                                    className="w-full lg:w-1/2 max-w-[500px] aspect-square relative flex items-center justify-center"
+                                    variants={showCinematicIntro ? speedometerWoosh : undefined}
+                                    initial="hidden"
+                                    animate="visible"
+                                    key={showCinematicIntro ? 'cinematic' : 'standard'} // Remount on toggle
+                                >
+                                    <InvestmentChart
+                                        data={tokenAllocations}
+                                        activeSymbol={introAsset || hoveredAsset || expandedAsset}
+                                        onHover={handleHover}
+                                    />
+                                </motion.div>
+
+                                {/* Interactive Legend - Vertically Centered */}
+                                <div className="w-full lg:w-1/2 flex flex-col justify-center">
+                                    <div className="space-y-3">
+                                        {tokenAllocations.map(a => {
+                                            const activeItem = introAsset || hoveredAsset || expandedAsset
+                                            const isActive = activeItem === a.symbol
+                                            const isDimmed = activeItem && !isActive
+
+                                            return (
+                                                <motion.div
+                                                    key={a.symbol}
+                                                    layout
+                                                    // Handlers
+                                                    onMouseEnter={() => handleHover(a.symbol)}
+                                                    // Note: Parent onMouseLeave handles the "exit" safety, 
+                                                    // but we keep this for specific item interactions if needed.
+
+                                                    // Animation States
+                                                    initial={{ opacity: 1 }}
+                                                    animate={{
+                                                        opacity: isDimmed ? 0.3 : 1,
+                                                        scale: isActive ? 1.05 : 1,
+                                                        x: isActive ? 10 : 0 // Slide right slightly
+                                                    }}
+                                                    transition={{ duration: 0.2 }}
+                                                    className={`flex items-center justify-between group cursor-pointer p-3 rounded-xl transition-all ${isActive ? 'bg-white/10 shadow-lg ring-1 ring-white/20' : 'hover:bg-white/5'
+                                                        }`}
+                                                >
+                                                    <div className="flex items-center gap-4 min-w-0">
+                                                        <span className="w-4 h-4 rounded-full ring-2 ring-white/10 flex-shrink-0 shadow-sm" style={{ backgroundColor: a.color }} />
+                                                        <span className="text-lg font-medium text-slate-300 group-hover:text-white transition-colors truncate" title={a.symbol}>
+                                                            {a.symbol}
+                                                        </span>
+                                                    </div>
+                                                    <span className="text-lg font-bold text-white tabular-nums flex-shrink-0">{a.percent}%</span>
+
+                                                </motion.div>
+                                            )
+                                        })}
+                                    </div>
                                 </div>
                             </div>
                         </CardContent>
@@ -186,11 +315,26 @@ export default function Portfolio() {
                     {/* Asset List Section (Scrollable) */}
                     <div className="flex flex-col h-full overflow-hidden">
                         {/* Header for list could go here */}
-                        <div className="overflow-y-auto no-scrollbar p-1 space-y-3 flex-1 h-full pb-12">
+                        <motion.div
+                            className="overflow-y-auto no-scrollbar p-1 flex-1 h-full pb-12"
+                            variants={containerStagger}
+                            initial="hidden"
+                            animate="visible"
+                            key={showCinematicIntro ? 'cinematic-list' : 'standard-list'} // Force remount for stagger
+                        >
                             {assets.map(asset => (
-                                <TokenCard key={asset.symbol} asset={asset} />
+                                <motion.div
+                                    key={asset.symbol}
+                                    variants={showCinematicIntro ? thanosReverse : fadeInUp}
+                                >
+                                    <TokenCard
+                                        asset={asset}
+                                        isExpanded={expandedAsset === asset.symbol}
+                                        onToggle={() => setExpandedAsset(prev => prev === asset.symbol ? null : asset.symbol)}
+                                    />
+                                </motion.div>
                             ))}
-                        </div>
+                        </motion.div>
                     </div>
                 </div>
             </motion.section>

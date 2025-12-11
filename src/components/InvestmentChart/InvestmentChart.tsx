@@ -1,5 +1,7 @@
 import { useState, useCallback } from 'react'
 import { ResponsiveContainer, PieChart, Pie, Cell, Sector } from 'recharts'
+import { motion } from 'framer-motion'
+import { textFadeIn } from '../../utils/animations'
 
 export type Allocation = {
   symbol: string
@@ -9,106 +11,112 @@ export type Allocation = {
 
 const renderActiveShape = (props: any) => {
   const RADIAN = Math.PI / 180
-  const {
-    cx, cy, midAngle, innerRadius, outerRadius, startAngle, endAngle,
-    fill, payload, percent, value
-  } = props
+  const { cx, cy, midAngle, innerRadius, outerRadius, startAngle, endAngle, fill, payload } = props
+  const { symbol, percent } = payload
+
   const sin = Math.sin(-RADIAN * midAngle)
   const cos = Math.cos(-RADIAN * midAngle)
 
-  // 1. Surface Point
-  const sx = cx + (outerRadius) * cos
-  const sy = cy + (outerRadius) * sin
+  // Start of line (inside the slice)
+  // From the middle of the band: (inner + outer) / 2
+  const midRadius = innerRadius + (outerRadius - innerRadius) / 2
+  const sx = cx + midRadius * cos
+  const sy = cy + midRadius * sin
 
-  // 2. Elbow Point (slightly out)
-  const mx = cx + (outerRadius + 20) * cos
-  const my = cy + (outerRadius + 20) * sin
+  // End of line (near center text)
+  // Stop ~40px from center to avoid hitting text
+  const ex = cx + 40 * cos
+  const ey = cy + 40 * sin
 
-  // 3. Target End Point (Vertical Bands)
-  // If in upper half (my < cy), go to Top (Y=40). Else Bottom (Y=320).
-  const isTop = my < cy
-  const ey = isTop ? 40 : 320
-
-  // 4. Clamp X to safe area (Container is ~360 wide, keep text away from edges)
-  // Text is anchored middle, so keep center within [70, 290]
-  const ex = Math.max(70, Math.min(290, mx))
-
-  const textAnchor = "middle"
+  // Dynamic font size
+  let fontSize = 24
+  if (symbol.length > 8) fontSize = 20
+  if (symbol.length > 12) fontSize = 16
+  if (symbol.length > 16) fontSize = 14
 
   return (
     <g>
-      {/* Active Main Sector */}
+      {/* Active Sector Highlight */}
       <Sector
         cx={cx}
         cy={cy}
         innerRadius={innerRadius}
-        outerRadius={outerRadius + 6}
+        outerRadius={outerRadius + 8}
         startAngle={startAngle}
         endAngle={endAngle}
         fill={fill}
-        style={{ filter: `drop-shadow(0 0 10px ${fill}80)` }}
+        style={{ filter: `drop-shadow(0 0 8px ${fill}80)` }}
       />
-
-      {/* Decorative Outer Ring Segment */}
+      {/* Hover Zone */}
       <Sector
         cx={cx}
         cy={cy}
+        innerRadius={innerRadius}
+        outerRadius={outerRadius + 15}
         startAngle={startAngle}
         endAngle={endAngle}
-        innerRadius={outerRadius + 10}
-        outerRadius={outerRadius + 12}
-        fill={fill}
-        fillOpacity={0.4}
+        fill="transparent"
       />
 
-      {/* Connecting Line (Circuit Style) */}
+      {/* Internal Simple Line */}
       <path
-        d={`M${sx},${sy} L${mx},${my} L${ex},${ey}`}
+        d={`M${sx},${sy} L${ex},${ey}`}
         stroke={fill}
         strokeWidth={2}
         fill="none"
         opacity={0.8}
       />
 
-      {/* End Dot */}
-      <circle cx={ex} cy={ey} r={4} fill={fill} stroke="rgba(255,255,255,0.2)" strokeWidth={2} />
-
-      {/* External Labels Stacked Vertical */}
-      {isTop ? (
-        <>
-          <text x={ex} y={ey} dy={-10} textAnchor={textAnchor} fill="#94a3b8" className="text-sm font-medium">
-            {payload.percent}%
-          </text>
-          <text x={ex} y={ey} dy={-30} textAnchor={textAnchor} fill="#ffffff" className="text-base font-bold" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>
-            {payload.symbol.length > 12 ? payload.symbol.slice(0, 12) + '...' : payload.symbol}
-          </text>
-        </>
-      ) : (
-        <>
-          <text x={ex} y={ey} dy={20} textAnchor={textAnchor} fill="#ffffff" className="text-base font-bold" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>
-            {payload.symbol.length > 12 ? payload.symbol.slice(0, 12) + '...' : payload.symbol}
-          </text>
-          <text x={ex} y={ey} dy={40} textAnchor={textAnchor} fill="#94a3b8" className="text-sm font-medium">
-            {payload.percent}%
-          </text>
-        </>
-      )}
+      {/* Center Text Group */}
+      <motion.text
+        key={symbol} // Key triggers animation on change
+        x={cx}
+        y={cy}
+        dy={-5}
+        textAnchor="middle"
+        fill="#ffffff"
+        initial="hidden"
+        animate="visible"
+        variants={textFadeIn}
+        style={{
+          fontSize: `${fontSize}px`,
+          fontWeight: 'bold',
+          textShadow: '0 2px 10px rgba(0,0,0,0.5)',
+          pointerEvents: 'none'
+        }}
+      >
+        {symbol}
+      </motion.text>
+      <text
+        x={cx}
+        y={cy}
+        dy={18}
+        textAnchor="middle"
+        fill="#94a3b8"
+        style={{
+          fontSize: '14px',
+          fontWeight: '500',
+          pointerEvents: 'none'
+        }}
+      >
+        {percent}%
+      </text>
     </g>
   )
 }
 
-export default function InvestmentChart({ data, onHover }: { data: Allocation[], onHover?: (symbol: string | null) => void }) {
-  const [activeIndex, setActiveIndex] = useState(0)
+export default function InvestmentChart({ data, onHover, activeSymbol }: { data: Allocation[], onHover?: (symbol: string | null) => void, activeSymbol?: string | null }) {
+  // Driven by props (Controlled)
+  const activeIndex = data.findIndex(d => d.symbol === activeSymbol)
 
   const onPieEnter = useCallback((_: any, index: number) => {
-    setActiveIndex(index)
+    // Only notify parent, parent updates activeSymbol -> updates activeIndex
     if (onHover && data[index]) {
       onHover(data[index].symbol)
     }
   }, [onHover, data])
 
   const onPieLeave = useCallback(() => {
-    // setActiveIndex(0) // Optional: Reset active slice or keep it
     if (onHover) onHover(null)
   }, [onHover])
 
@@ -129,6 +137,7 @@ export default function InvestmentChart({ data, onHover }: { data: Allocation[],
             onMouseEnter={onPieEnter}
             onMouseLeave={onPieLeave}
             stroke="none"
+            isAnimationActive={false} // Prevent internal animation conflict
           >
             {data.map((entry, index) => (
               <Cell
@@ -139,10 +148,24 @@ export default function InvestmentChart({ data, onHover }: { data: Allocation[],
               />
             ))}
           </Pie>
+
+          {/* GHOST PIE: Extends detection range by ~30% outwards */}
+          <Pie
+            data={data}
+            cx="50%"
+            cy="50%"
+            innerRadius={90}
+            outerRadius={160} // 120 * 1.33 ≈ 160
+            dataKey="percent"
+            onMouseEnter={onPieEnter}
+            onMouseLeave={onPieLeave}
+            stroke="none"
+            fill="transparent"
+            style={{ cursor: 'pointer' }}
+            isAnimationActive={false}
+          />
         </PieChart>
       </ResponsiveContainer>
     </div>
   )
 }
-
-

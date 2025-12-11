@@ -17,7 +17,7 @@ import { useUIStore } from '../state/uiStore'
 
 export default function Settings() {
   const [hideAmounts, setHideAmounts] = useState(false)
-  const { showGradients, toggleGradients, enableAnimations, toggleAnimations } = useUIStore()
+  const { showGradients, toggleGradients, enableAnimations, toggleAnimations, showCinematicIntro, toggleCinematicIntro } = useUIStore()
 
   // Wallet-specific sweep settings
   const [walletSweepSettings, setWalletSweepSettings] = useState<WalletSweepSettingsMap>(() => {
@@ -108,22 +108,40 @@ export default function Settings() {
                     checked={enableAnimations}
                     onChange={toggleAnimations}
                     sx={{
-                      '& .MuiSwitch-switchBase.Mui-checked': {
-                        color: '#667eea',
-                      },
-                      '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                        backgroundColor: '#667eea',
-                      },
+                      '& .MuiSwitch-switchBase.Mui-checked': { color: '#667eea' },
+                      '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: '#667eea' },
                     }}
                   />
                 }
-                label="Enable Visual Animations"
+                label="Enable UI Animations"
                 sx={{ color: '#a9b2ff' }}
               />
               <Typography variant="body2" className="text-slate-400 mt-1">
-                Toggle smooth entrance and hover effects
+                General transition effects
               </Typography>
             </div>
+
+            <div>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={showCinematicIntro}
+                    onChange={toggleCinematicIntro}
+                    sx={{
+                      '& .MuiSwitch-switchBase.Mui-checked': { color: '#fbbf24' }, // Amber color for "Cinematic"
+                      '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: '#fbbf24' },
+                    }}
+                  />
+                }
+                label="Cinematic Intro Mode"
+                sx={{ color: '#fbbf24' }}
+              />
+              <Typography variant="body2" className="text-slate-400 mt-1">
+                Arcade-style loading & Speedometer sweep
+              </Typography>
+            </div>
+
+
           </div>
         </CardContent>
       </Card>

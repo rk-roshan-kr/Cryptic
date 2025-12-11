@@ -6,6 +6,8 @@ interface UIState {
     toggleGradients: () => void
     enableAnimations: boolean
     toggleAnimations: () => void
+    showCinematicIntro: boolean
+    toggleCinematicIntro: () => void
 
     // --- New Hover State ---
     hoveredAsset: string | null
@@ -19,6 +21,8 @@ export const useUIStore = create<UIState>()(
             toggleGradients: () => set((state) => ({ showGradients: !state.showGradients })),
             enableAnimations: true,
             toggleAnimations: () => set((state) => ({ enableAnimations: !state.enableAnimations })),
+            showCinematicIntro: true,
+            toggleCinematicIntro: () => set((state) => ({ showCinematicIntro: !state.showCinematicIntro })),
 
             // Initial value
             hoveredAsset: null,
@@ -29,7 +33,8 @@ export const useUIStore = create<UIState>()(
             // IMPORTANT: Do not persist 'hoveredAsset' to localStorage
             partialize: (state) => ({
                 showGradients: state.showGradients,
-                enableAnimations: state.enableAnimations
+                enableAnimations: state.enableAnimations,
+                showCinematicIntro: state.showCinematicIntro
             }),
         }
     )

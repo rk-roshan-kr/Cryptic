@@ -91,3 +91,72 @@ export const modalVariants: Variants = {
     },
     exit: { opacity: 0, scale: 0.9, y: 20 }
 };
+
+// --- 7. Cinematic: Thanos Reverse (Vaporize In) ---
+// Cards form from dust
+export const thanosReverse: Variants = {
+    hidden: {
+        opacity: 0,
+        scale: 1.1,
+        filter: 'blur(20px)',
+        y: 10
+    },
+    visible: {
+        opacity: 1,
+        scale: 1,
+        filter: 'blur(0px)',
+        y: 0,
+        transition: {
+            duration: 0.8,
+            ease: "easeOut"
+        }
+    }
+};
+
+// --- 8. Cinematic: Speedometer Woosh ---
+// Chart spins up like an engine starting
+// --- 8. Cinematic: Speedometer Woosh ---
+// Chart scales up like an engine starting
+export const speedometerWoosh: Variants = {
+    hidden: {
+        scale: 0.8,
+        opacity: 0
+    },
+    visible: {
+        scale: 1,
+        opacity: 1,
+        transition: {
+            type: "spring",
+            stiffness: 100,
+            damping: 10,
+            mass: 0.8,
+            delay: 0.5 // Wait for cards approx
+        }
+    }
+};
+
+// --- 9. Cinematic: Text Fade In ---
+// For chart labels
+export const textFadeIn: Variants = {
+    hidden: {
+        opacity: 0,
+        y: 10,
+        scale: 0.9
+    },
+    visible: {
+        opacity: 1,
+        y: 0,
+        scale: 1,
+        transition: {
+            type: "spring",
+            stiffness: 200,
+            damping: 15,
+            mass: 0.5
+        }
+    },
+    exit: {
+        opacity: 0,
+        scale: 0.9,
+        transition: { duration: 0.1 }
+    }
+};

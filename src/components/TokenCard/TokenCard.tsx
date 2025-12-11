@@ -60,17 +60,21 @@ export type Asset = {
     price: number
 }
 
-export default function TokenCard({ asset }: { asset: Asset }) {
+// Props interface for controlled component
+interface TokenCardProps {
+    asset: Asset
+    isExpanded: boolean
+    onToggle: () => void
+}
+
+export default function TokenCard({ asset, isExpanded, onToggle }: TokenCardProps) {
     const navigate = useNavigate()
     const cardRef = useRef<HTMLDivElement>(null)
 
     // 1. Global State Connection
     const { showGradients, hoveredAsset, setHoveredAsset } = useUIStore()
 
-    // 2. Local State
-    const [isExpanded, setIsExpanded] = useState(false)
-
-    // 3. Computed Values
+    // 2. Computed Values
     const isPositive = asset.change24hPercent >= 0
     const changeColor = isPositive ? '#4ade80' : '#f87171'
     const changeBg = isPositive ? 'rgba(74, 222, 128, 0.1)' : 'rgba(248, 113, 113, 0.1)'
@@ -79,30 +83,23 @@ export default function TokenCard({ asset }: { asset: Asset }) {
     // Check if this card is the one being hovered globally (on chart)
     const isFocused = hoveredAsset === asset.symbol
 
-    // 4. "The Magic Glue": Sync Global Hover to Local State
-    // 4. "The Magic Glue": Sync Global Hover to Local State
+    // 3. "The Magic Glue": Sync Global Hover to Local State
     useEffect(() => {
         if (isFocused) {
-            // setIsExpanded(true) // Disabled auto-expansion on focus
             // Smooth scroll to this card if triggered from chart
             cardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
         }
     }, [isFocused])
 
-    // 5. Handlers
-    const handleToggle = () => setIsExpanded(!isExpanded)
-
-    // Bi-directional: Hovering card updates chart too
+    // 4. Handlers
     const handleMouseEnter = () => {
-        // setIsExpanded(true) // Disabled auto-expansion on hover
         setHoveredAsset(asset.symbol)
     }
     const handleMouseLeave = () => {
-        // setIsExpanded(false) // Disabled auto-collapse
         setHoveredAsset(null)
     }
 
-    // 6. Dynamic Styles
+    // 5. Dynamic Styles (Applied to Inner Card)
     const backgroundStyle = showGradients ? {
         background: `linear-gradient(135deg, ${metaColor}25 0%, rgba(30,30,35,0.6) 50%, rgba(30,30,35,0.4) 100%)`,
         backdropFilter: 'blur(10px)',
@@ -115,87 +112,90 @@ export default function TokenCard({ asset }: { asset: Asset }) {
             ref={cardRef}
             initial={false}
             whileTap={tapAnimation}
-            // Scale up slightly if focused by chart
-            animate={{ scale: isFocused ? 1.02 : 1 }}
-            onClick={handleToggle}
+            onClick={onToggle}
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
-            className={`
-        card-base relative p-4 rounded-xl cursor-pointer group select-none overflow-hidden
-        transition-colors duration-300
-        ${!showGradients ? 'hover:bg-[#1f1f22]' : ''}
-        ${isExpanded ? 'bg-[#1f1f22]/80' : ''}
-        ${isFocused ? 'ring-2 ring-blue-500/50 shadow-[0_0_30px_rgba(59,130,246,0.2)]' : 'ring-1 ring-white/5'}
-      `}
-            style={backgroundStyle}
+            className="w-full py-1.5 cursor-pointer z-0 relative" // HIT BOX: Includes Padding!
         >
-            {/* --- TOP ROW --- */}
-            <motion.div layout="position" className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3 min-w-0 flex-1">
-                    <Avatar src={asset.logo} sx={{ width: 40, height: 40 }} className="ring-2 ring-white/5 shadow-lg flex-shrink-0" />
-                    <div className="min-w-0">
-                        <Typography className="text-sm text-slate-400 font-medium truncate">{asset.name}</Typography>
-                        <div className="flex items-center gap-2">
-                            <Typography variant="h6" className="text-white font-bold leading-tight truncate">{asset.symbol}</Typography>
-                            <ChevronIcon className={`text-slate-500 transition-transform duration-300 ${isExpanded ? 'rotate-180' : 'rotate-0'}`} />
+            {/* INNER VISUAL CARD */}
+            <div
+                className={`
+                    card-base relative p-4 rounded-xl overflow-hidden
+                    transition-colors duration-300
+                    ${!showGradients ? 'hover:bg-[#1f1f22]' : ''}
+                    ${isExpanded ? 'bg-[#1f1f22]/80' : ''}
+                    ${isFocused ? 'ring-2 ring-blue-500/50 shadow-[0_0_30px_rgba(59,130,246,0.2)]' : 'ring-1 ring-white/5'}
+                `}
+                style={backgroundStyle}
+            >
+                {/* --- TOP ROW --- */}
+                <motion.div layout="position" className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <Avatar src={asset.logo} sx={{ width: 40, height: 40 }} className="ring-2 ring-white/5 shadow-lg flex-shrink-0" />
+                        <div className="min-w-0">
+                            <Typography className="text-sm text-slate-400 font-medium truncate">{asset.name}</Typography>
+                            <div className="flex items-center gap-2">
+                                <Typography variant="h6" className="text-white font-bold leading-tight truncate">{asset.symbol}</Typography>
+                                <ChevronIcon className={`text-slate-500 transition-transform duration-300 ${isExpanded ? 'rotate-180' : 'rotate-0'}`} />
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                {/* Pushed to Right: Percent Change */}
-                <div className="flex items-center justify-center px-3 py-1.5 rounded-full font-bold text-sm shadow-sm" style={{ backgroundColor: changeBg, color: changeColor }}>
-                    {isPositive ? '+' : ''}{asset.change24hPercent.toFixed(2)}%
-                </div>
-            </motion.div>
+                    {/* Pushed to Right: Percent Change */}
+                    <div className="flex items-center justify-center px-3 py-1.5 rounded-full font-bold text-sm shadow-sm" style={{ backgroundColor: changeBg, color: changeColor }}>
+                        {isPositive ? '+' : ''}{asset.change24hPercent.toFixed(2)}%
+                    </div>
+                </motion.div>
 
-            {/* --- EXPANDABLE SECTION --- */}
-            <AnimatePresence>
-                {isExpanded && (
-                    <motion.div
-                        variants={accordionVariants}
-                        initial="collapsed"
-                        animate="expanded"
-                        exit="collapsed"
-                        className="overflow-hidden"
-                    >
-                        <div className="pt-4 mt-2 border-t border-white/5">
-                            <div className="flex items-center justify-between mb-4">
-                                <div className="flex flex-col">
-                                    <Typography className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-0.5">Balance</Typography>
-                                    <Typography className="text-white font-semibold text-sm">
-                                        {asset.qty.toLocaleString(undefined, { maximumFractionDigits: 4 })}
-                                        <span className="text-slate-500 mx-1.5">/</span>
-                                        <span className="text-slate-300">${asset.valueUsd.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
-                                    </Typography>
-                                </div>
-                                <div className="flex flex-col items-end">
-                                    <Typography className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-0.5">Price</Typography>
-                                    <Typography className="text-white font-bold text-sm">${asset.price.toLocaleString(undefined, { maximumFractionDigits: 2 })}</Typography>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-4 h-[40px]">
-                                <div className="flex-1 h-full relative">
-                                    <Sparkline color={changeColor} isPositive={isPositive} />
-                                    <div className="absolute top-0 right-0 flex flex-col items-end pointer-events-none">
-                                        <Typography className="text-[9px] text-slate-500 font-bold uppercase tracking-wider mb-0.5">24h</Typography>
-                                        <Typography className="text-[10px] font-bold" style={{ color: changeColor }}>
-                                            {isPositive ? '+' : ''}{asset.change24hPercent.toFixed(2)}%
+                {/* --- EXPANDABLE SECTION --- */}
+                <AnimatePresence>
+                    {isExpanded && (
+                        <motion.div
+                            variants={accordionVariants}
+                            initial="collapsed"
+                            animate="expanded"
+                            exit="collapsed"
+                            className="overflow-hidden"
+                        >
+                            <div className="pt-4 mt-2 border-t border-white/5">
+                                <div className="flex items-center justify-between mb-4">
+                                    <div className="flex flex-col">
+                                        <Typography className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-0.5">Balance</Typography>
+                                        <Typography className="text-white font-semibold text-sm">
+                                            {asset.qty.toLocaleString(undefined, { maximumFractionDigits: 4 })}
+                                            <span className="text-slate-500 mx-1.5">/</span>
+                                            <span className="text-slate-300">${asset.valueUsd.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
                                         </Typography>
                                     </div>
+                                    <div className="flex flex-col items-end">
+                                        <Typography className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-0.5">Price</Typography>
+                                        <Typography className="text-white font-bold text-sm">${asset.price.toLocaleString(undefined, { maximumFractionDigits: 2 })}</Typography>
+                                    </div>
                                 </div>
-                                <Button
-                                    variant="contained" size="small"
-                                    onClick={(e) => { e.stopPropagation(); navigate(`/app/trade/${asset.symbol}`) }}
-                                    className="font-bold shadow-lg"
-                                    style={{ backgroundColor: '#3b82f6', fontSize: '10px', height: '28px', borderRadius: '8px', textTransform: 'none' }}
-                                >
-                                    Trade
-                                </Button>
+                                <div className="flex items-center gap-4 h-[40px]">
+                                    <div className="flex-1 h-full relative">
+                                        <Sparkline color={changeColor} isPositive={isPositive} />
+                                        <div className="absolute top-0 right-0 flex flex-col items-end pointer-events-none">
+                                            <Typography className="text-[9px] text-slate-500 font-bold uppercase tracking-wider mb-0.5">24h</Typography>
+                                            <Typography className="text-[10px] font-bold" style={{ color: changeColor }}>
+                                                {isPositive ? '+' : ''}{asset.change24hPercent.toFixed(2)}%
+                                            </Typography>
+                                        </div>
+                                    </div>
+                                    <Button
+                                        variant="contained" size="small"
+                                        onClick={(e) => { e.stopPropagation(); navigate(`/app/trade/${asset.symbol}`) }}
+                                        className="font-bold shadow-lg"
+                                        style={{ backgroundColor: '#3b82f6', fontSize: '10px', height: '28px', borderRadius: '8px', textTransform: 'none' }}
+                                    >
+                                        Trade
+                                    </Button>
+                                </div>
                             </div>
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </div>
         </motion.div>
     )
 }
