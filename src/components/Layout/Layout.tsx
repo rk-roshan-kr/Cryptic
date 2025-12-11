@@ -1,5 +1,5 @@
-import { ReactNode } from 'react'
-import { AppBar, Box, Drawer, Toolbar, Typography, IconButton, CssBaseline, useMediaQuery, useTheme } from '@mui/material'
+import { ReactNode, useState, useEffect } from 'react'
+import { Box, Drawer, Typography, IconButton, CssBaseline, useMediaQuery, useTheme } from '@mui/material'
 import DashboardIcon from '@mui/icons-material/Dashboard'
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet'
 import PieChartIcon from '@mui/icons-material/PieChart'
@@ -7,22 +7,19 @@ import SettingsIcon from '@mui/icons-material/Settings'
 import TrendingUpIcon from '@mui/icons-material/TrendingUp'
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
-import MenuIcon from '@mui/icons-material/Menu'
-import React, { useState, useEffect } from 'react'
-import { NavLink, useLocation, Outlet } from 'react-router-dom'
-import { motion, AnimatePresence } from 'framer-motion'
-
+import React from 'react'
+import { NavLink, useLocation } from 'react-router-dom'
+import { motion } from 'framer-motion'
+import { useUIStore } from '../../state/uiStore'
 
 const drawerWidth = 260
 const collapsedDrawerWidth = 64
-
-import { useUIStore } from '../../state/uiStore'
 
 export default function Layout({ children }: { children: ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
   const location = useLocation()
-  const { showGradients } = useUIStore()
+  const { showGradients, enableAnimations } = useUIStore()
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen)
@@ -44,7 +41,6 @@ export default function Layout({ children }: { children: ReactNode }) {
     { to: '/app/wallets', icon: <AccountBalanceWalletIcon sx={{ color: 'primary.main' }} />, label: 'Wallets' },
     { to: '/app/portfolio', icon: <PieChartIcon sx={{ color: 'primary.main' }} />, label: 'Portfolio' },
     { to: '/app/investment', icon: <TrendingUpIcon sx={{ color: 'primary.main' }} />, label: 'Investment' },
-
     { to: '/app/crypto-test', icon: <TrendingUpIcon sx={{ color: 'primary.main' }} />, label: 'Crypto Test' },
     { to: '/app/settings', icon: <SettingsIcon sx={{ color: 'primary.main' }} />, label: 'Settings' },
   ] as const
@@ -104,15 +100,8 @@ export default function Layout({ children }: { children: ReactNode }) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
-  const items = [
-    { label: "Home", href: "/app/overview" },
-    { label: "Wallets", href: "/app/wallets" },
-    { label: "Portfolio", href: "/app/portfolio" },
-    { label: "Settings", href: "/app/settings" },
-  ];
-
   return (
-    <Box sx={{ display: 'flex', height: '100vh' }} className={showGradients ? 'theme-gradients' : ''}>
+    <Box sx={{ display: 'flex', height: '100vh' }} className={`${showGradients ? 'theme-gradients' : ''} ${!enableAnimations ? 'disable-animations' : ''}`}>
       <CssBaseline />
       {isMobile ? (
         <Box
@@ -122,7 +111,7 @@ export default function Layout({ children }: { children: ReactNode }) {
             bottom: 0,
             left: 0,
             right: 0,
-            zIndex: (theme) => theme.zIndex.appBar + 10, // Ensure it's above everything
+            zIndex: (theme) => theme.zIndex.appBar + 10,
             height: '80px',
             backgroundColor: 'rgba(15, 15, 16, 0.9)',
             backdropFilter: 'blur(12px)',
@@ -131,7 +120,7 @@ export default function Layout({ children }: { children: ReactNode }) {
             alignItems: 'center',
             justifyContent: 'space-around',
             px: 2,
-            pb: 'max(8px, env(safe-area-inset-bottom))' // Safe area for iPhone home bar
+            pb: 'max(8px, env(safe-area-inset-bottom))'
           }}
         >
           {navItems.filter(i => i.label !== 'Crypto Test').map((item) => (
@@ -150,47 +139,44 @@ export default function Layout({ children }: { children: ReactNode }) {
           ))}
         </Box>
       ) : (
-        <>
-
-          <Box component="nav" sx={{ width: { sm: currentDrawerWidth }, flexShrink: { sm: 0 }, position: 'fixed', height: '100vh', zIndex: (theme) => theme.zIndex.appBar - 1 }} aria-label="mailbox folders">
-            <Drawer
-              variant="temporary"
-              open={mobileOpen}
-              onClose={handleDrawerToggle}
-              ModalProps={{ keepMounted: true }}
-              sx={{
-                display: { xs: 'block', sm: 'none' },
-                '& .MuiDrawer-paper': {
-                  boxSizing: 'border-box',
-                  width: drawerWidth,
-                  borderRight: 'none',
-                  backgroundColor: 'transparent',
-                  backgroundImage: 'none'
-                },
-                '& .MuiBackdrop-root': { backgroundColor: 'transparent' }
-              }}
-            >
-              {drawer}
-            </Drawer>
-            <Drawer
-              variant="permanent"
-              sx={{
-                display: { xs: 'none', sm: 'block' },
-                '& .MuiDrawer-paper': {
-                  boxSizing: 'border-sizing',
-                  width: currentDrawerWidth,
-                  borderRight: 'none',
-                  backgroundColor: 'transparent',
-                  backgroundImage: 'none',
-                  transition: 'width 0.3s ease'
-                }
-              }}
-              open
-            >
-              {drawer}
-            </Drawer>
-          </Box>
-        </>
+        <Box component="nav" sx={{ width: { sm: currentDrawerWidth }, flexShrink: { sm: 0 }, position: 'fixed', height: '100vh', zIndex: (theme) => theme.zIndex.appBar - 1 }} aria-label="mailbox folders">
+          <Drawer
+            variant="temporary"
+            open={mobileOpen}
+            onClose={handleDrawerToggle}
+            ModalProps={{ keepMounted: true }}
+            sx={{
+              display: { xs: 'block', sm: 'none' },
+              '& .MuiDrawer-paper': {
+                boxSizing: 'border-box',
+                width: drawerWidth,
+                borderRight: 'none',
+                backgroundColor: 'transparent',
+                backgroundImage: 'none'
+              },
+              '& .MuiBackdrop-root': { backgroundColor: 'transparent' }
+            }}
+          >
+            {drawer}
+          </Drawer>
+          <Drawer
+            variant="permanent"
+            sx={{
+              display: { xs: 'none', sm: 'block' },
+              '& .MuiDrawer-paper': {
+                boxSizing: 'border-sizing',
+                width: currentDrawerWidth,
+                borderRight: 'none',
+                backgroundColor: 'transparent',
+                backgroundImage: 'none',
+                transition: 'width 0.3s ease'
+              }
+            }}
+            open
+          >
+            {drawer}
+          </Drawer>
+        </Box>
       )}
       <Box
         component="main"
@@ -198,12 +184,11 @@ export default function Layout({ children }: { children: ReactNode }) {
           flexGrow: 1,
           p: { xs: 2, md: 4 },
           minWidth: 0,
-          ml: { sm: isMobile ? 0 : `${currentDrawerWidth}px` }, // Adjust margin for mobile
+          ml: { sm: isMobile ? 0 : `${currentDrawerWidth}px` },
           transition: 'margin-left 0.3s ease',
-          pb: isMobile ? '120px' : '0', // Add padding for mobile nav
+          pb: isMobile ? '120px' : '0',
         }}
       >
-
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -215,5 +200,3 @@ export default function Layout({ children }: { children: ReactNode }) {
     </Box>
   );
 }
-
-

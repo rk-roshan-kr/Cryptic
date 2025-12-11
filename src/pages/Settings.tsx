@@ -17,7 +17,7 @@ import { useUIStore } from '../state/uiStore'
 
 export default function Settings() {
   const [hideAmounts, setHideAmounts] = useState(false)
-  const { showGradients, toggleGradients } = useUIStore()
+  const { showGradients, toggleGradients, enableAnimations, toggleAnimations } = useUIStore()
 
   // Wallet-specific sweep settings
   const [walletSweepSettings, setWalletSweepSettings] = useState<WalletSweepSettingsMap>(() => {
@@ -98,6 +98,30 @@ export default function Settings() {
               />
               <Typography variant="body2" className="text-slate-400 mt-1">
                 Enable colorful backgrounds for assets
+              </Typography>
+            </div>
+
+            <div>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={enableAnimations}
+                    onChange={toggleAnimations}
+                    sx={{
+                      '& .MuiSwitch-switchBase.Mui-checked': {
+                        color: '#667eea',
+                      },
+                      '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                        backgroundColor: '#667eea',
+                      },
+                    }}
+                  />
+                }
+                label="Enable Visual Animations"
+                sx={{ color: '#a9b2ff' }}
+              />
+              <Typography variant="body2" className="text-slate-400 mt-1">
+                Toggle smooth entrance and hover effects
               </Typography>
             </div>
           </div>

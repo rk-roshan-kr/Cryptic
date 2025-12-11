@@ -97,12 +97,20 @@ const renderActiveShape = (props: any) => {
   )
 }
 
-export default function InvestmentChart({ data }: { data: Allocation[] }) {
+export default function InvestmentChart({ data, onHover }: { data: Allocation[], onHover?: (symbol: string | null) => void }) {
   const [activeIndex, setActiveIndex] = useState(0)
 
   const onPieEnter = useCallback((_: any, index: number) => {
     setActiveIndex(index)
-  }, [])
+    if (onHover && data[index]) {
+      onHover(data[index].symbol)
+    }
+  }, [onHover, data])
+
+  const onPieLeave = useCallback(() => {
+    // setActiveIndex(0) // Optional: Reset active slice or keep it
+    if (onHover) onHover(null)
+  }, [onHover])
 
   return (
     <div style={{ width: '100%', height: '100%', overflow: 'hidden', minHeight: 320 }}>
@@ -119,6 +127,7 @@ export default function InvestmentChart({ data }: { data: Allocation[] }) {
             paddingAngle={3}
             dataKey="percent"
             onMouseEnter={onPieEnter}
+            onMouseLeave={onPieLeave}
             stroke="none"
           >
             {data.map((entry, index) => (

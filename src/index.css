@@ -2,14 +2,23 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Global Animation Control */
+.disable-animations *,
+.disable-animations *::before,
+.disable-animations *::after {
+  animation: none !important;
+  transition: none !important;
+}
+
 :root {
   color-scheme: dark;
 }
 
-/* Custom Scrollbar */
+/* Custom Scrollbar - Completely Hidden (Invisible) */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 0px;
+  height: 0px;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-track {
@@ -17,13 +26,12 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 99px;
-  transition: background 0.2s ease;
+  background: transparent;
+  border: none;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.25);
+  background: transparent;
 }
 
 ::-webkit-scrollbar-corner {
@@ -32,8 +40,9 @@
 
 /* Firefox */
 * {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  /* IE and Edge */
 }
 
 

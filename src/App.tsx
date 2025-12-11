@@ -15,6 +15,7 @@ const CryptoTest = React.lazy(() => import('./pages/CryptoTest'))
 const Investment = React.lazy(() => import('./pages/Investment'))
 const InvestmentDetail = React.lazy(() => import('./pages/InvestmentDetail'))
 const MutualFundDetail = React.lazy(() => import('./pages/MutualFundDetail'))
+const Marketplace = React.lazy(() => import('./pages/Marketplace'))
 
 
 export default function App() {
@@ -109,6 +110,14 @@ export default function App() {
             element={
               <Layout>
                 <Portfolio />
+              </Layout>
+            }
+          />
+          <Route
+            path="/app/trade/:symbol"
+            element={
+              <Layout>
+                <Marketplace />
               </Layout>
             }
           />
