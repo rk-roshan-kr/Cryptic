@@ -16,22 +16,22 @@ export default function Portfolio() {
   // Subscribe to transaction updates
   useEffect(() => {
     setRecentTransactions(transactionsStore.getRecent(5))
-    
+
     const unsubscribe = transactionsStore.subscribe((transactions) => {
       setRecentTransactions(transactions.slice(0, 5))
     })
-    
+
     return unsubscribe
   }, [])
 
   // Subscribe to crypto balance updates
   useEffect(() => {
     setBalances(cryptoStore.getAll())
-    
+
     const unsubscribe = cryptoStore.subscribeToBalances((newBalances) => {
       setBalances(newBalances)
     })
-    
+
     return unsubscribe
   }, [])
 
@@ -45,8 +45,10 @@ export default function Portfolio() {
   ] as const
 
   const assets = portfolio.map(p => {
-    const usd = prices.get(p.symbol as CryptoSymbol)
+    const data = prices.get(p.symbol as CryptoSymbol)
+    const usd = data.price
     const valueUsd = Math.max(0, p.qty * usd)
+
     return {
       symbol: p.symbol,
       name: cryptoMeta[p.symbol as CryptoSymbol]?.name || p.name,
@@ -54,25 +56,8 @@ export default function Portfolio() {
       qty: p.qty,
       valueUsd,
       percentOfTreasury: 0,
-      change24hPercent: (() => {
-        // Generate extreme volatility for 24h changes
-        const baseVolatility = 0.4 // High base volatility
-        const cryptoVolatility = 0.2 // Additional crypto-specific volatility
-        const randomFactor = Math.random() - 0.5
-        const volatility = baseVolatility + cryptoVolatility
-        const dailyChange = randomFactor * volatility * 15 // 15x multiplier for extreme swings
-        
-        // Add occasional extreme spikes (crypto-style)
-        const spikeChance = Math.random()
-        let spikeMultiplier = 1
-        if (spikeChance > 0.95) {
-          spikeMultiplier = 5 // 500% spike
-        } else if (spikeChance < 0.05) {
-          spikeMultiplier = 0.1 // 90% crash
-        }
-        
-        return (dailyChange * spikeMultiplier) * 100 // Convert to percentage
-      })(),
+      change24hPercent: data.change24h,
+      price: usd,
     }
   })
 
@@ -91,7 +76,7 @@ export default function Portfolio() {
     const randomFactor = Math.random() - 0.5
     const volatility = baseVolatility + cryptoVolatility
     const dailyChange = randomFactor * volatility * 12 // 12x multiplier for extreme swings
-    
+
     // Add occasional extreme spikes (crypto-style)
     const spikeChance = Math.random()
     let spikeMultiplier = 1
@@ -100,18 +85,19 @@ export default function Portfolio() {
     } else if (spikeChance < 0.05) {
       spikeMultiplier = 0.2 // 80% crash
     }
-    
+
     return (dailyChange * spikeMultiplier) * 100 // Convert to percentage
   }, [])
 
   return (
-    <motion.div 
-      className="space-y-6 text-coolgray dark:text-slate-300"
+    <motion.div
+      className="space-y-6 text-coolgray dark:text-slate-300 h-[calc(100vh-100px)] overflow-y-auto snap-y snap-mandatory pb-32 no-scrollbar"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6 }}
     >
       <motion.section
+        className="snap-start scroll-mt-4"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.1 }}
@@ -142,7 +128,7 @@ export default function Portfolio() {
                 <Typography className="text-xs text-slate-400">tracked</Typography>
               </div>
               <div className="flex -space-x-2 mt-3">
-                {recentTransactions.slice(0,5).map((tx) => (
+                {recentTransactions.slice(0, 5).map((tx) => (
                   <Avatar key={tx.id} sx={{ width: 28, height: 28 }} className="ring-2 ring-white">
                     {tx.coin.charAt(0)}
                   </Avatar>
@@ -161,42 +147,56 @@ export default function Portfolio() {
       </motion.section>
 
       <motion.section
+        className="snap-start scroll-mt-4"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.2 }}
       >
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 min-w-0">
-          <Card className="card-base lg:col-span-1 min-w-0">
-            <CardContent>
-              <div className="flex items-center justify-between">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 min-w-0 h-auto lg:h-[500px]">
+          {/* Chart Section */}
+          <Card className="card-base min-w-0 flex flex-col h-full min-h-[85vh] lg:min-h-0">
+            <CardContent className="h-full flex flex-col">
+              <div className="flex items-center justify-between mb-2">
                 <Typography variant="h6" className="text-white">Portfolio Allocation</Typography>
                 <span className="chip" style={{ backgroundColor: 'var(--accent-soft)', color: 'var(--accent)' }}>Donut</span>
               </div>
-              <div className="mt-4 min-w-0">
-                <InvestmentChart data={tokenAllocations} />
-              </div>
-              <div className="mt-4 grid grid-cols-2 gap-2">
-                {tokenAllocations.map(a => (
-                  <div key={a.symbol} className="flex items-center justify-between bg-transparent rounded-xl px-3 py-2">
-                    <div className="flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: a.color }} />
-                      <span className="text-sm text-slate-300">{a.symbol}</span>
+
+              <div className="flex-1 flex flex-col sm:flex-row items-center justify-center gap-8">
+                {/* Chart Left - Expanded */}
+                <div className="w-full max-w-[360px] aspect-square flex-shrink-0 relative flex items-center justify-center">
+                  <InvestmentChart data={tokenAllocations} />
+                </div>
+
+                {/* Legend Right - Hidden Scrollbar & Padding */}
+                <div className="flex-1 w-full space-y-4 overflow-y-auto no-scrollbar pr-2 pb-4">
+                  {tokenAllocations.map(a => (
+                    <div key={a.symbol} className="flex items-center justify-between group cursor-default">
+                      <div className="flex items-center gap-3">
+                        <span className="w-3 h-3 rounded-full ring-2 ring-white/10" style={{ backgroundColor: a.color }} />
+                        <span className="text-sm font-medium text-slate-300 group-hover:text-white transition-colors truncate max-w-[140px]" title={a.symbol}>{a.symbol}</span>
+                      </div>
+                      <span className="text-sm font-bold text-white tabular-nums">{a.percent}%</span>
                     </div>
-                    <span className="text-sm font-medium text-white">{a.percent}%</span>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             </CardContent>
           </Card>
-          <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 min-w-0">
-            {assets.map(asset => (
-              <TokenCard key={asset.symbol} asset={asset} />
-            ))}
+
+          {/* Asset List Section (Scrollable) */}
+          <div className="flex flex-col h-full overflow-hidden">
+            {/* Header for list could go here */}
+            <div className="overflow-y-auto no-scrollbar p-1 space-y-3 flex-1 h-full pb-12">
+              {assets.map(asset => (
+                <TokenCard key={asset.symbol} asset={asset} />
+              ))}
+            </div>
           </div>
         </div>
       </motion.section>
 
       <motion.section
+        className="snap-start scroll-mt-4"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.3 }}

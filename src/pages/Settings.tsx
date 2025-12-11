@@ -13,9 +13,12 @@ interface WalletSweepSettingsMap {
   [wallet: string]: WalletSweepSettings
 }
 
+import { useUIStore } from '../state/uiStore'
+
 export default function Settings() {
   const [hideAmounts, setHideAmounts] = useState(false)
-  
+  const { showGradients, toggleGradients } = useUIStore()
+
   // Wallet-specific sweep settings
   const [walletSweepSettings, setWalletSweepSettings] = useState<WalletSweepSettingsMap>(() => {
     const saved = localStorage.getItem('wallet_sweep_settings')
@@ -44,32 +47,60 @@ export default function Settings() {
   return (
     <div className="space-y-6">
       <Typography variant="h4" className="text-white font-bold mb-6">Settings</Typography>
-      
+
       {/* General Preferences */}
       <Card className="card-base">
         <CardContent>
           <Typography variant="h6" className="text-white font-semibold mb-4">General Preferences</Typography>
-          <FormControlLabel 
-            control={
-              <Switch 
-                checked={hideAmounts} 
-                onChange={(e) => setHideAmounts(e.target.checked)}
-                sx={{
-                  '& .MuiSwitch-switchBase.Mui-checked': {
-                    color: '#667eea',
-                  },
-                  '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                    backgroundColor: '#667eea',
-                  },
-                }}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={hideAmounts}
+                    onChange={(e) => setHideAmounts(e.target.checked)}
+                    sx={{
+                      '& .MuiSwitch-switchBase.Mui-checked': {
+                        color: '#667eea',
+                      },
+                      '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                        backgroundColor: '#667eea',
+                      },
+                    }}
+                  />
+                }
+                label="Hide Amounts"
+                sx={{ color: '#a9b2ff' }}
               />
-            } 
-            label="Hide Amounts" 
-            sx={{ color: '#a9b2ff' }}
-          />
-          <Typography variant="body2" className="text-slate-400 mt-2">
-            Hide sensitive financial information from the interface
-          </Typography>
+              <Typography variant="body2" className="text-slate-400 mt-1">
+                Hide sensitive financial information
+              </Typography>
+            </div>
+
+            <div>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={showGradients}
+                    onChange={toggleGradients}
+                    sx={{
+                      '& .MuiSwitch-switchBase.Mui-checked': {
+                        color: '#667eea',
+                      },
+                      '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                        backgroundColor: '#667eea',
+                      },
+                    }}
+                  />
+                }
+                label="Show Card Gradients"
+                sx={{ color: '#a9b2ff' }}
+              />
+              <Typography variant="body2" className="text-slate-400 mt-1">
+                Enable colorful backgrounds for assets
+              </Typography>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
@@ -78,32 +109,32 @@ export default function Settings() {
         <CardContent>
           <Typography variant="h6" className="text-white font-semibold mb-4">Auto Sweep Configuration</Typography>
           <Typography variant="body2" className="text-slate-400 mb-6">
-            Configure automatic sweep thresholds for each cryptocurrency. When balance exceeds the threshold, 
+            Configure automatic sweep thresholds for each cryptocurrency. When balance exceeds the threshold,
             excess amount will be automatically transferred to your investment wallet.
           </Typography>
-          
+
           <div className="space-y-4">
             {availableWallets.map((wallet) => {
               const settings = getSweepSettings(wallet)
               const meta = cryptoMeta[wallet]
-              
+
               return (
-                <Box 
-                  key={wallet} 
-                  sx={{ 
-                    p: 3, 
-                    border: '1px solid rgba(169, 178, 255, 0.1)', 
+                <Box
+                  key={wallet}
+                  sx={{
+                    p: 3,
+                    border: '1px solid rgba(169, 178, 255, 0.1)',
                     borderRadius: 2,
                     background: 'rgba(169, 178, 255, 0.02)'
                   }}
                 >
                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                      <Box 
-                        sx={{ 
-                          width: 32, 
-                          height: 32, 
-                          borderRadius: '50%', 
+                      <Box
+                        sx={{
+                          width: 32,
+                          height: 32,
+                          borderRadius: '50%',
                           background: meta?.color || '#60a5fa',
                           display: 'flex',
                           alignItems: 'center',
@@ -124,10 +155,10 @@ export default function Settings() {
                         </Typography>
                       </Box>
                     </Box>
-                    <FormControlLabel 
+                    <FormControlLabel
                       control={
-                        <Switch 
-                          checked={settings.enabled} 
+                        <Switch
+                          checked={settings.enabled}
                           onChange={(e) => setSweepSettings(wallet, { ...settings, enabled: e.target.checked })}
                           sx={{
                             '& .MuiSwitch-switchBase.Mui-checked': {
@@ -138,11 +169,11 @@ export default function Settings() {
                             },
                           }}
                         />
-                      } 
-                      label="" 
+                      }
+                      label=""
                     />
                   </Box>
-                  
+
                   {settings.enabled && (
                     <Box sx={{ mt: 2 }}>
                       <TextField
@@ -190,10 +221,10 @@ export default function Settings() {
       <Card className="card-base">
         <CardContent>
           <Typography variant="h6" className="text-white font-semibold mb-4">Notifications</Typography>
-          <FormControlLabel 
+          <FormControlLabel
             control={
-              <Switch 
-                defaultChecked 
+              <Switch
+                defaultChecked
                 sx={{
                   '& .MuiSwitch-switchBase.Mui-checked': {
                     color: '#667eea',
@@ -203,8 +234,8 @@ export default function Settings() {
                   },
                 }}
               />
-            } 
-            label="Email Notifications" 
+            }
+            label="Email Notifications"
             sx={{ color: '#a9b2ff' }}
           />
           <Typography variant="body2" className="text-slate-400 mt-2">

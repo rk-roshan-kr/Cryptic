@@ -35,7 +35,7 @@ function loadInitial(): Record<CryptoSymbol, number> {
   try {
     const raw = localStorage.getItem(LS_KEY)
     if (raw) return JSON.parse(raw)
-  } catch {}
+  } catch { }
   // Defaults: 4 famous + BAT + Sepolia ETH
   return {
     BTC: 0,
@@ -51,7 +51,7 @@ function loadTransactions(): Transaction[] {
   try {
     const raw = localStorage.getItem(TX_KEY)
     if (raw) return JSON.parse(raw)
-  } catch {}
+  } catch { }
   return []
 }
 
@@ -68,10 +68,10 @@ class CryptoStore {
   }
 
   private persist() {
-    try { 
+    try {
       localStorage.setItem(LS_KEY, JSON.stringify(this.balances))
       localStorage.setItem(TX_KEY, JSON.stringify(this.transactions))
-    } catch {}
+    } catch { }
   }
 
   // Balance methods
@@ -86,7 +86,7 @@ class CryptoStore {
   set(symbol: CryptoSymbol, value: number) {
     const oldValue = this.balances[symbol] ?? 0
     this.balances[symbol] = Math.max(0, value)
-    
+
     // Record transaction if there's a change
     if (oldValue !== this.balances[symbol]) {
       this.addTransaction({
@@ -96,7 +96,7 @@ class CryptoStore {
         description: 'Manual balance update'
       })
     }
-    
+
     this.persist()
     this.emit()
   }
@@ -104,7 +104,7 @@ class CryptoStore {
   delta(symbol: CryptoSymbol, change: number, description?: string) {
     const oldValue = this.balances[symbol] ?? 0
     this.balances[symbol] = Math.max(0, oldValue + change)
-    
+
     // Record transaction
     if (change !== 0) {
       this.addTransaction({
@@ -114,7 +114,7 @@ class CryptoStore {
         description
       })
     }
-    
+
     this.persist()
     this.emit()
   }
@@ -126,10 +126,10 @@ class CryptoStore {
       id: crypto.randomUUID(),
       timestamp: Date.now()
     }
-    
+
     this.transactions.unshift(newTransaction) // Add to beginning
     this.transactions = this.transactions.slice(0, 1000) // Keep last 1000 transactions
-    
+
     this.persist()
     this.emit()
   }
@@ -143,11 +143,12 @@ class CryptoStore {
   }
 
   // Portfolio value calculation
-  calculateTotalValue(prices?: Record<CryptoSymbol, number>): number {
+  calculateTotalValue(prices?: Record<CryptoSymbol, any>): number {
     if (!prices) return 0
-    
+
     return Object.entries(this.balances).reduce((total, [symbol, amount]) => {
-      const price = prices[symbol as CryptoSymbol] || 0
+      const data = prices[symbol as CryptoSymbol]
+      const price = typeof data === 'number' ? data : (data?.price || 0)
       return total + (amount * price)
     }, 0)
   }
@@ -189,7 +190,7 @@ class CryptoStore {
     const state = this.getPortfolioState()
     const balances = this.getAll()
     const transactions = this.getTransactions()
-    
+
     this.listeners.forEach((l) => l(state))
     this.balanceListeners.forEach((l) => l(balances))
     this.transactionListeners.forEach((l) => l(transactions))
@@ -199,11 +200,11 @@ class CryptoStore {
 export const cryptoStore = new CryptoStore()
 
 // Dev helper: allow backend/console to update balances
-declare global { 
-  interface Window { 
+declare global {
+  interface Window {
     cryptoStore?: any
-    cryptoBalances?: any 
-  } 
+    cryptoBalances?: any
+  }
 }
 
 if (typeof window !== 'undefined') {
@@ -215,7 +216,7 @@ if (typeof window !== 'undefined') {
     reset: () => cryptoStore.reset(),
     state: () => cryptoStore.getPortfolioState()
   }
-  
+
   // Keep backward compatibility
   window.cryptoBalances = {
     get: (s?: CryptoSymbol) => (s ? cryptoStore.get(s) : cryptoStore.getAll()),

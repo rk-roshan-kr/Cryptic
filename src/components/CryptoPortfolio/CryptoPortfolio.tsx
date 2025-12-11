@@ -1,11 +1,11 @@
 import React, { useState } from 'react'
-import { 
-  Card, 
-  CardContent, 
-  Typography, 
-  Button, 
-  TextField, 
-  Box, 
+import {
+  Card,
+  CardContent,
+  Typography,
+  Button,
+  TextField,
+  Box,
   Chip,
   List,
   ListItem,
@@ -31,7 +31,7 @@ export default function CryptoPortfolio() {
 
   const handleUpdateBalance = (change: number) => {
     if (!amount || parseFloat(amount) <= 0) return
-    
+
     const numAmount = parseFloat(amount)
     updateBalance(selectedCrypto, change * numAmount, description || undefined)
     setAmount('')
@@ -40,7 +40,7 @@ export default function CryptoPortfolio() {
 
   const handleAddTransaction = () => {
     if (!amount || parseFloat(amount) <= 0) return
-    
+
     const numAmount = parseFloat(amount)
     addTransaction({
       type: 'buy',
@@ -201,8 +201,8 @@ export default function CryptoPortfolio() {
       </Dialog>
 
       {/* History Dialog */}
-      <Dialog 
-        open={showHistoryDialog} 
+      <Dialog
+        open={showHistoryDialog}
         onClose={() => setShowHistoryDialog(false)}
         maxWidth="md"
         fullWidth
@@ -217,8 +217,8 @@ export default function CryptoPortfolio() {
                     primary={`${tx.type.toUpperCase()} ${tx.amount} ${tx.symbol}`}
                     secondary={`${formatDate(tx.timestamp)}${tx.description ? ` - ${tx.description}` : ''}`}
                   />
-                  <Chip 
-                    label={tx.type} 
+                  <Chip
+                    label={tx.type}
                     color={tx.type === 'buy' || tx.type === 'receive' ? 'success' : 'error'}
                     size="small"
                   />

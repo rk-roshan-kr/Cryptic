@@ -11,15 +11,18 @@ import MenuIcon from '@mui/icons-material/Menu'
 import React, { useState, useEffect } from 'react'
 import { NavLink, useLocation, Outlet } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import GooeyNav from '../common/GooeyNav'
+
 
 const drawerWidth = 260
 const collapsedDrawerWidth = 64
+
+import { useUIStore } from '../../state/uiStore'
 
 export default function Layout({ children }: { children: ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
   const location = useLocation()
+  const { showGradients } = useUIStore()
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen)
@@ -28,7 +31,8 @@ export default function Layout({ children }: { children: ReactNode }) {
   // Auto-collapse sidebar when on investment-related routes
   useEffect(() => {
     const isInvestmentRoute = location.pathname.includes('/app/investment') ||
-      location.pathname.includes('/app/crypto-fund')
+      location.pathname.includes('/app/crypto-fund') ||
+      location.pathname.includes('/app/portfolio')
 
     if (isInvestmentRoute) {
       setCollapsed(true)
@@ -51,7 +55,7 @@ export default function Layout({ children }: { children: ReactNode }) {
         {!collapsed && (
           <>
             <Typography variant="h6" className="text-white font-bold">Cryptic</Typography>
-            <Typography variant="body2" className="text-slate-300">Management Dashboard</Typography>
+            <Typography variant="body2" className="text-slate-300">Way to the future!</Typography>
           </>
         )}
         <IconButton
@@ -108,10 +112,43 @@ export default function Layout({ children }: { children: ReactNode }) {
   ];
 
   return (
-    <Box sx={{ display: 'flex', height: '100vh' }}>
+    <Box sx={{ display: 'flex', height: '100vh' }} className={showGradients ? 'theme-gradients' : ''}>
       <CssBaseline />
       {isMobile ? (
-        <GooeyNav items={items} initialActiveIndex={items.findIndex(item => item.href === location.pathname)} />
+        <Box
+          component="nav"
+          sx={{
+            position: 'fixed',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            zIndex: (theme) => theme.zIndex.appBar + 10, // Ensure it's above everything
+            height: '80px',
+            backgroundColor: 'rgba(15, 15, 16, 0.9)',
+            backdropFilter: 'blur(12px)',
+            borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-around',
+            px: 2,
+            pb: 'max(8px, env(safe-area-inset-bottom))' // Safe area for iPhone home bar
+          }}
+        >
+          {navItems.filter(i => i.label !== 'Crypto Test').map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              className={({ isActive }) => `flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${isActive ? 'text-[var(--accent)]' : 'text-slate-400 hover:text-white'}`}
+            >
+              <div className="bg-transparent p-1 rounded-full">
+                {React.cloneElement(item.icon, { sx: { fontSize: 22, color: 'inherit' } })}
+              </div>
+              <span className="text-[10px] font-medium tracking-wide">
+                {item.label === 'Overview' ? 'Home' : item.label === 'Investment' ? 'Invest' : item.label}
+              </span>
+            </NavLink>
+          ))}
+        </Box>
       ) : (
         <>
 
@@ -163,10 +200,10 @@ export default function Layout({ children }: { children: ReactNode }) {
           minWidth: 0,
           ml: { sm: isMobile ? 0 : `${currentDrawerWidth}px` }, // Adjust margin for mobile
           transition: 'margin-left 0.3s ease',
-          pb: isMobile ? '70px' : '0', // Add padding for mobile nav
+          pb: isMobile ? '120px' : '0', // Add padding for mobile nav
         }}
       >
-        <Toolbar sx={{ display: isMobile ? 'none' : 'block' }} /> {/* Hide toolbar on mobile */}
+
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

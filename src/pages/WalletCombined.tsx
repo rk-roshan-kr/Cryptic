@@ -14,13 +14,13 @@ const generateVolatileSparklineData = () => {
   let value = 375000
   const baseVolatility = 0.25 // High base volatility
   const cryptoVolatility = 0.15 // Additional crypto-specific volatility
-  
+
   for (let i = 0; i < 7; i++) {
     // Extreme volatility with multiple factors
     const randomFactor = Math.random() - 0.5
     const volatility = baseVolatility + cryptoVolatility
     const dailyChange = randomFactor * volatility * 12 // 12x multiplier for extreme swings
-    
+
     // Add occasional extreme spikes (crypto-style)
     const spikeChance = Math.random()
     let spikeMultiplier = 1
@@ -29,16 +29,16 @@ const generateVolatileSparklineData = () => {
     } else if (spikeChance < 0.05) {
       spikeMultiplier = 0.2 // 80% crash
     }
-    
+
     value = value * (1 + (dailyChange * spikeMultiplier) / 100)
     const date = new Date(2024, 0, i + 1).toISOString().split('T')[0]
-    
+
     data.push({
       value: Math.max(value, 100000), // Much lower minimum for extreme drops
       date: date
     })
   }
-  
+
   return data
 }
 
@@ -72,8 +72,8 @@ const cardVariants = {
 
 const tabVariants = {
   hidden: { opacity: 0, x: -20 },
-  visible: { 
-    opacity: 1, 
+  visible: {
+    opacity: 1,
     x: 0,
     transition: { duration: 0.3 }
   }
@@ -81,11 +81,11 @@ const tabVariants = {
 
 const buttonVariants = {
   rest: { scale: 1 },
-  hover: { 
+  hover: {
     scale: 1.02,
     transition: { duration: 0.2 }
   },
-  tap: { 
+  tap: {
     scale: 0.98,
     transition: { duration: 0.1 }
   }
@@ -93,7 +93,7 @@ const buttonVariants = {
 
 export default function WalletCombined() {
   const [hideAmounts, setHideAmounts] = useState(false)
-  
+
   // Tab state
   type TabKey = 'balance' | 'send' | 'receive'
   const [activeTab, setActiveTab] = useState<TabKey>('balance')
@@ -128,11 +128,11 @@ export default function WalletCombined() {
   // Subscribe to transaction updates
   useEffect(() => {
     setTransactions(transactionsStore.getAll())
-    
+
     const unsubscribe = transactionsStore.subscribe((txs) => {
       setTransactions(txs)
     })
-    
+
     return unsubscribe
   }, [])
 
@@ -160,7 +160,7 @@ export default function WalletCombined() {
   const nowStr = () => {
     const d = new Date()
     const pad = (x: number) => String(x).padStart(2, '0')
-    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
     return `${pad(d.getDate())} ${months[d.getMonth()]} ${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`
   }
   const genId = () => `TX-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`
@@ -307,18 +307,18 @@ export default function WalletCombined() {
 
   const buttonVariants = {
     rest: { scale: 1 },
-    hover: { 
+    hover: {
       scale: 1.02,
       transition: { duration: 0.2 }
     },
-    tap: { 
+    tap: {
       scale: 0.98,
       transition: { duration: 0.1 }
     }
   }
 
   return (
-    <motion.div 
+    <motion.div
       className="wallet"
       variants={containerVariants}
       initial="hidden"
@@ -326,17 +326,17 @@ export default function WalletCombined() {
     >
       <div className="wallet-container" ref={containerRef}>
         <div className="wallet-fx-layer" ref={fxLayerRef} />
-        
+
         {/* Topbar with gradient background (from Wallets.tsx) */}
-        <motion.div 
+        <motion.div
           className="wallet-topbar"
           variants={cardVariants}
         >
           <div className="wallet-title">Wallet</div>
           <div className="wallet-status-bar">
             <div className="wallet-row">
-              <motion.button 
-                className="wallet-icon-btn" 
+              <motion.button
+                className="wallet-icon-btn"
                 title="Profile"
                 variants={buttonVariants}
                 whileHover="hover"
@@ -347,8 +347,8 @@ export default function WalletCombined() {
                   <path d="M4 20c2.5-4 13.5-4 16 0" stroke="#b8bffa" strokeWidth="1.8" strokeLinecap="round" />
                 </svg>
               </motion.button>
-              <motion.button 
-                className="wallet-icon-btn" 
+              <motion.button
+                className="wallet-icon-btn"
                 title="Security"
                 variants={buttonVariants}
                 whileHover="hover"
@@ -358,8 +358,8 @@ export default function WalletCombined() {
                   <path d="M12 3l7 3v6c0 5-3.5 8-7 9-3.5-1-7-4-7-9V6l7-3z" stroke="#b8bffa" strokeWidth="1.8" />
                 </svg>
               </motion.button>
-              <motion.button 
-                className="wallet-icon-btn" 
+              <motion.button
+                className="wallet-icon-btn"
                 title="Notifications"
                 variants={buttonVariants}
                 whileHover="hover"
@@ -370,10 +370,10 @@ export default function WalletCombined() {
                   <circle cx="12" cy="20.2" r="1.6" fill="#b8bffa" />
                 </svg>
               </motion.button>
-              <motion.button 
-                className="wallet-icon-btn" 
-                title="Hide/Show balances" 
-                onClick={() => setHideAmounts((v) => !v)} 
+              <motion.button
+                className="wallet-icon-btn"
+                title="Hide/Show balances"
+                onClick={() => setHideAmounts((v) => !v)}
                 aria-pressed={hideAmounts}
                 variants={buttonVariants}
                 whileHover="hover"
@@ -397,12 +397,12 @@ export default function WalletCombined() {
         </motion.div>
 
         {/* Tabs */}
-        <motion.div 
+        <motion.div
           className="wallet-tabs"
           variants={cardVariants}
         >
-          <motion.button 
-            className={`wallet-tab ${activeTab === 'balance' ? 'active' : ''}`} 
+          <motion.button
+            className={`wallet-tab ${activeTab === 'balance' ? 'active' : ''}`}
             onClick={() => setActiveTab('balance')}
             variants={tabVariants}
             whileHover={{ scale: 1.05 }}
@@ -410,8 +410,8 @@ export default function WalletCombined() {
           >
             BALANCE
           </motion.button>
-          <motion.button 
-            className={`wallet-tab ${activeTab === 'send' ? 'active' : ''}`} 
+          <motion.button
+            className={`wallet-tab ${activeTab === 'send' ? 'active' : ''}`}
             onClick={() => setActiveTab('send')}
             variants={tabVariants}
             whileHover={{ scale: 1.05 }}
@@ -419,8 +419,8 @@ export default function WalletCombined() {
           >
             SEND CRYPTO
           </motion.button>
-          <motion.button 
-            className={`wallet-tab ${activeTab === 'receive' ? 'active' : ''}`} 
+          <motion.button
+            className={`wallet-tab ${activeTab === 'receive' ? 'active' : ''}`}
             onClick={() => setActiveTab('receive')}
             variants={tabVariants}
             whileHover={{ scale: 1.05 }}
@@ -440,7 +440,7 @@ export default function WalletCombined() {
               transition={{ duration: 0.3 }}
             >
               {/* Wallet Selector */}
-              <motion.div 
+              <motion.div
                 className="mb-6"
                 variants={cardVariants}
               >
@@ -449,9 +449,9 @@ export default function WalletCombined() {
                     <span>Select Wallet</span>
                   </div>
                   <div className="wallet-action-body">
-                    <select 
-                      className="wallet-action-input" 
-                      value={selectedWallet} 
+                    <select
+                      className="wallet-action-input"
+                      value={selectedWallet}
                       onChange={(e) => setSelectedWallet(e.target.value as CryptoSymbol)}
                     >
                       <option value="BTC">Bitcoin (BTC)</option>
@@ -474,7 +474,7 @@ export default function WalletCombined() {
                     onTransfer={handleTransfer}
                   />
                 </motion.div>
-                
+
                 <motion.div variants={cardVariants}>
                   <InvestmentCard
                     totalUSD={investmentBalance}
@@ -504,30 +504,30 @@ export default function WalletCombined() {
                         <span>Transfer to Investment Wallet</span>
                       </div>
                       <div className="wallet-action-body">
-                        <input 
-                          className="wallet-action-input" 
-                          placeholder={`Amount (${selectedWallet})`} 
-                          inputMode="decimal" 
-                          value={transferAmount} 
-                          onChange={(e) => setTransferAmount(e.target.value)} 
+                        <input
+                          className="wallet-action-input"
+                          placeholder={`Amount (${selectedWallet})`}
+                          inputMode="decimal"
+                          value={transferAmount}
+                          onChange={(e) => setTransferAmount(e.target.value)}
                         />
-                        <button 
-                          className="wallet-action-send" 
+                        <button
+                          className="wallet-action-send"
                           onClick={() => {
                             const amt = parseFloat(transferAmount)
-                            if (!Number.isFinite(amt) || amt <= 0 || amt > wallet1Balance) { 
-                              alert('Enter a valid amount'); 
-                              return 
+                            if (!Number.isFinite(amt) || amt <= 0 || amt > wallet1Balance) {
+                              alert('Enter a valid amount');
+                              return
                             }
-                            
+
                             // Convert crypto to USD using price dictionary
-                            const cryptoPrice = prices.get(selectedWallet)
+                            const cryptoPrice = prices.get(selectedWallet).price
                             const usdValue = amt * cryptoPrice
-                            
+
                             // Update balances
                             investmentWallet.add(usdValue)
                             cryptoStore.delta(selectedWallet, -amt)
-                            
+
                             // Add transaction record
                             const transaction: Transaction = {
                               id: genId(),
@@ -566,29 +566,29 @@ export default function WalletCombined() {
                         <span>Invest Amount</span>
                       </div>
                       <div className="wallet-action-body">
-                        <input 
-                          className="wallet-action-input" 
-                          placeholder="Amount (USD)" 
-                          inputMode="decimal" 
-                          value={investAmount} 
-                          onChange={(e) => setInvestAmount(e.target.value)} 
+                        <input
+                          className="wallet-action-input"
+                          placeholder="Amount (USD)"
+                          inputMode="decimal"
+                          value={investAmount}
+                          onChange={(e) => setInvestAmount(e.target.value)}
                         />
-                        <button 
-                          className="wallet-action-send" 
+                        <button
+                          className="wallet-action-send"
                           onClick={() => {
                             const amt = parseFloat(investAmount)
-                            if (!Number.isFinite(amt) || amt <= 0) { 
-                              alert('Enter a valid USD amount'); 
-                              return 
+                            if (!Number.isFinite(amt) || amt <= 0) {
+                              alert('Enter a valid USD amount');
+                              return
                             }
-                            if (amt > investmentBalance) { 
-                              alert('Insufficient investment balance'); 
-                              return 
+                            if (amt > investmentBalance) {
+                              alert('Insufficient investment balance');
+                              return
                             }
-                            
+
                             // Deduct amount from investment wallet
                             investmentWallet.subtract(amt)
-                            
+
                             // Add transaction record
                             const transaction: Transaction = {
                               id: genId(),
@@ -606,7 +606,7 @@ export default function WalletCombined() {
                               type: 'investment'
                             }
                             transactionsStore.add(transaction)
-                            
+
                             setInvestAmount('')
                             setShowInvest(false)
                             alert('Investment completed!')
@@ -620,7 +620,7 @@ export default function WalletCombined() {
                 </motion.div>
               )}
 
-              
+
             </motion.div>
           )}
 
@@ -634,8 +634,8 @@ export default function WalletCombined() {
               transition={{ duration: 0.3 }}
             >
               <div className="wallet-send-grid">
-                <motion.section 
-                  className="wallet-card" 
+                <motion.section
+                  className="wallet-card"
                   aria-labelledby="send-add-details"
                   variants={cardVariants}
                 >
@@ -657,7 +657,7 @@ export default function WalletCombined() {
                         <option value="BAT">Basic Attention Token (BAT)</option>
                         <option value="AUR">Aurora (AUR)</option>
                       </select>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 9l6 6 6-6" stroke="#b8bffa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 9l6 6 6-6" stroke="#b8bffa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
                     </div>
                   </div>
 
@@ -671,7 +671,7 @@ export default function WalletCombined() {
                         <option value="Polygon">Polygon</option>
                         <option value="BSC (BEP-20)">BSC (BEP-20)</option>
                       </select>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 9l6 6 6-6" stroke="#b8bffa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 9l6 6 6-6" stroke="#b8bffa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
                     </div>
                   </div>
 
@@ -684,7 +684,7 @@ export default function WalletCombined() {
                         <option value="0xB3...72c1">Cold Storage (0xB3...72c1)</option>
                         <option value="3J98t1Wp...">BTC P2SH (3J98t1Wp...)</option>
                       </select>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 9l6 6 6-6" stroke="#b8bffa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 9l6 6 6-6" stroke="#b8bffa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
                     </div>
                   </div>
 
@@ -693,17 +693,17 @@ export default function WalletCombined() {
                     <div className="send-grid-qty">
                       <input className="send-input" placeholder="Enter Quantity" inputMode="decimal" value={sendQty} onChange={(e) => setSendQty(e.target.value)} />
                       <div className="send-quick-row">
-                        {['25','50','75','100'].map(pct => (
-                          <motion.button 
-                            key={pct} 
-                            className="send-chip-btn" 
+                        {['25', '50', '75', '100'].map(pct => (
+                          <motion.button
+                            key={pct}
+                            className="send-chip-btn"
                             onClick={(e) => {
                               e.preventDefault()
                               const coin = sendCoin || 'BAT'
                               const max = quickMaxByCoin[coin] ?? 0
                               let q = 0
                               const p = parseInt(pct, 10)
-                              q = max * (p/100)
+                              q = max * (p / 100)
                               setSendQty(fmt(q))
                             }}
                             whileHover={{ scale: 1.05 }}
@@ -717,7 +717,7 @@ export default function WalletCombined() {
                   </div>
                 </motion.section>
 
-                <motion.aside 
+                <motion.aside
                   className="wallet-card"
                   variants={cardVariants}
                 >
@@ -727,18 +727,18 @@ export default function WalletCombined() {
                     <div className="send-sum-row"><div className="send-sum-label">GST</div><div className="send-sum-val">{sendReady ? `${fmt(gst)} ${sendCoin}` : '—'}</div></div>
                     <div className="send-sum-row"><div className="send-sum-label">Qty to be debited</div><div className="send-sum-val">{sendReady ? `${fmt(deb)} ${sendCoin}` : '—'}</div></div>
                   </div>
-                  <motion.button 
-                    className="send-cta" 
-                    disabled={!sendReady} 
+                  <motion.button
+                    className="send-cta"
+                    disabled={!sendReady}
                     onClick={() => {
                       if (!sendReady) return
                       const self = /my|cold|self/i.test(sendRecipient)
                       const recLabel = sendRecipient
                       const recFull = sendRecipient
-                      
+
                       // Update crypto store - deduct the sent amount
                       cryptoStore.delta(sendCoin as CryptoSymbol, -deb)
-                      
+
                       const transaction: Transaction = {
                         id: genId(),
                         date: nowStr(),
@@ -776,8 +776,8 @@ export default function WalletCombined() {
               transition={{ duration: 0.3 }}
             >
               <div className="wallet-send-grid">
-                <motion.section 
-                  className="wallet-card" 
+                <motion.section
+                  className="wallet-card"
                   aria-labelledby="recv-add-details"
                   variants={cardVariants}
                 >
@@ -799,7 +799,7 @@ export default function WalletCombined() {
                         <option value="BCH">Bitcoin Cash (BCH)</option>
                         <option value="AUR">Aurora (AUR)</option>
                       </select>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 9l6 6 6-6" stroke="#b8bffa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 9l6 6 6-6" stroke="#b8bffa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
                     </div>
                   </div>
 
@@ -813,7 +813,7 @@ export default function WalletCombined() {
                         <option value="Polygon">Polygon</option>
                         <option value="Bitcoin Cash">Bitcoin Cash</option>
                       </select>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 9l6 6 6-6" stroke="#b8bffa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 9l6 6 6-6" stroke="#b8bffa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
                     </div>
                   </div>
 
@@ -825,12 +825,12 @@ export default function WalletCombined() {
                         <option value="My address">My address</option>
                         <option value="Trading wallet">Trading wallet</option>
                       </select>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 9l6 6 6-6" stroke="#b8bffa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 9l6 6 6-6" stroke="#b8bffa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
                     </div>
                   </div>
 
                   {(recvCoin && recvNetwork) && (
-                    <motion.div 
+                    <motion.div
                       className="recv-note"
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
@@ -842,7 +842,7 @@ export default function WalletCombined() {
                   )}
                 </motion.section>
 
-                <motion.aside 
+                <motion.aside
                   className="wallet-card"
                   variants={cardVariants}
                 >
@@ -866,9 +866,9 @@ export default function WalletCombined() {
                         <span className="send-label" style={{ color: '#9aa0c7' }}>I am receiving <strong>{recvCoin || '—'}</strong> over <strong>{recvNetwork || '—'}</strong> Network</span>
                       </label>
 
-                      <motion.button 
-                        className="send-cta" 
-                        disabled={!recvAck} 
+                      <motion.button
+                        className="send-cta"
+                        disabled={!recvAck}
                         onClick={() => {
                           const addr = genRecvAddress(recvCoin, recvNetwork)
                           setRecvAddress(addr)
@@ -898,7 +898,7 @@ export default function WalletCombined() {
 
                       <AnimatePresence>
                         {recvAddress && (
-                          <motion.div 
+                          <motion.div
                             style={{ marginTop: 10 }}
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
@@ -916,56 +916,56 @@ export default function WalletCombined() {
               </div>
             </motion.div>
           )}
-                 </AnimatePresence>
+        </AnimatePresence>
 
-         {/* Common Transaction History */}
-         <motion.div 
-           className="wallet-section-title"
-           variants={cardVariants}
-         >
-           Transaction History
-         </motion.div>
-         <motion.div 
-           className="send-table"
-           variants={cardVariants}
-         >
-           <div className="send-thead">
-             <div>Date &amp; Time</div>
-             <div>Total Qty</div>
-             <div>Recipient Address</div>
-             <div>Network</div>
-             <div>Self Transfer</div>
-             <div>Status</div>
-             <div>Transaction ID</div>
-             <div></div>
-           </div>
-           <div className="send-tbody">
-             {transactions.length === 0 ? (
-               <div className="send-trow"><div>—</div><div>—</div><div>—</div><div>—</div><div><span className="send-tag">—</span></div><div>—</div><div>—</div><div></div></div>
-             ) : (
-               transactions.map((t: Transaction, index: number) => (
-                 <motion.div 
-                   className="send-trow" 
-                   key={t.id}
-                   initial={{ opacity: 0, x: -20 }}
-                   animate={{ opacity: 1, x: 0 }}
-                   transition={{ delay: index * 0.05 }}
-                 >
-                   <div>{t.date}</div>
-                   <div>{fmt(t.qty)} {t.coin}</div>
-                   <div title={t.recipientFull}>{t.recipient}</div>
-                   <div>{t.network}</div>
-                   <div><span className="send-tag">{t.self ? 'Yes' : 'No'}</span></div>
-                   <div className={t.status === 'Completed' ? 'send-status ok' : 'send-status fail'}>{t.status}</div>
-                   <div>{t.id}</div>
-                   <div></div>
-                 </motion.div>
-               ))
-             )}
-           </div>
-         </motion.div>
-         
-       </div>
-     </motion.div>
-   )
- }
+        {/* Common Transaction History */}
+        <motion.div
+          className="wallet-section-title"
+          variants={cardVariants}
+        >
+          Transaction History
+        </motion.div>
+        <motion.div
+          className="send-table"
+          variants={cardVariants}
+        >
+          <div className="send-thead">
+            <div>Date &amp; Time</div>
+            <div>Total Qty</div>
+            <div>Recipient Address</div>
+            <div>Network</div>
+            <div>Self Transfer</div>
+            <div>Status</div>
+            <div>Transaction ID</div>
+            <div></div>
+          </div>
+          <div className="send-tbody">
+            {transactions.length === 0 ? (
+              <div className="send-trow"><div>—</div><div>—</div><div>—</div><div>—</div><div><span className="send-tag">—</span></div><div>—</div><div>—</div><div></div></div>
+            ) : (
+              transactions.map((t: Transaction, index: number) => (
+                <motion.div
+                  className="send-trow"
+                  key={t.id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                >
+                  <div>{t.date}</div>
+                  <div>{fmt(t.qty)} {t.coin}</div>
+                  <div title={t.recipientFull}>{t.recipient}</div>
+                  <div>{t.network}</div>
+                  <div><span className="send-tag">{t.self ? 'Yes' : 'No'}</span></div>
+                  <div className={t.status === 'Completed' ? 'send-status ok' : 'send-status fail'}>{t.status}</div>
+                  <div>{t.id}</div>
+                  <div></div>
+                </motion.div>
+              ))
+            )}
+          </div>
+        </motion.div>
+
+      </div>
+    </motion.div>
+  )
+}
