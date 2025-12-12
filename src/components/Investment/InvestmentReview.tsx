@@ -16,7 +16,7 @@ interface InvestmentReviewProps {
     isViewMode?: boolean;
     currentValue?: number;
     onBuyMore?: () => void;
-    onSell?: () => void;
+    onSell?: (amount?: number) => void;
 }
 
 const InvestmentReview: React.FC<InvestmentReviewProps> = ({
@@ -31,6 +31,14 @@ const InvestmentReview: React.FC<InvestmentReviewProps> = ({
 }) => {
     const [timeRange, setTimeRange] = useState('1Y');
     const [activeTab, setActiveTab] = useState('overview'); // overview, holdings, manager
+    const [isSellMode, setIsSellMode] = useState(false);
+    const [sellAmountStr, setSellAmountStr] = useState(amount.toString());
+    const sellAmount = parseFloat(sellAmountStr) || 0;
+
+    // Update sellAmount if amount prop changes
+    React.useEffect(() => {
+        setSellAmountStr(amount.toString());
+    }, [amount]);
 
     // Memoize random data so it doesn't change on re-renders unless option changes
     const performanceData = useMemo(() => getPerformanceData(1000, 0.15), []);
@@ -257,47 +265,152 @@ const InvestmentReview: React.FC<InvestmentReviewProps> = ({
 
                         {isViewMode ? (
                             // VIEW MODE: Active Investment Details
-                            <>
-                                <div className="flex justify-between items-center mb-6">
-                                    <h3 className="text-white font-bold text-lg">Your Investment</h3>
-                                    <div className="px-2 py-1 bg-green-500/10 rounded text-green-400 text-xs font-bold uppercase tracking-wide">
-                                        ACTIVE
-                                    </div>
-                                </div>
+                            isSellMode ? (
+                                // SELL CONFIRMATION MODE
+                                <motion.div
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -10 }}
+                                >
+                                    <h3 className="text-white font-bold text-lg mb-2 text-red-400">Confirm Sale</h3>
+                                    <p className="text-sm text-gray-400 mb-6">
+                                        Configure the amount you wish to sell from your <span className="text-white font-bold">{selectedOption.name}</span> position.
+                                    </p>
 
-                                <div className="space-y-4 mb-8">
-                                    <div className="flex justify-between items-center p-3 bg-white/5 rounded-lg">
-                                        <span className="text-gray-400 text-sm">Principal</span>
-                                        <span className="text-white font-mono">{formatUSD(amount)}</span>
-                                    </div>
-                                    <div className="flex justify-between items-center p-3 bg-white/5 rounded-lg border border-green-500/20">
-                                        <span className="text-gray-400 text-sm">Current Value</span>
-                                        <span className="text-green-400 font-mono font-bold">{formatUSD(currentValue || amount * 1.05)}</span>
-                                    </div>
-                                    <div className="flex justify-between items-center px-1">
-                                        <span className="text-gray-400 text-sm">Total Returns</span>
-                                        <div className="text-right">
-                                            <div className="text-green-400 font-bold">+5.2%</div>
-                                            <div className="text-xs text-gray-500">+$245.32</div>
+                                    {/* Partial Sell Controls */}
+                                    <div className="mb-6 space-y-3">
+                                        <div className="flex justify-between text-xs text-gray-400 uppercase tracking-wider font-bold">
+                                            <span>Sell Amount</span>
+                                            <span>Max: {formatUSD(amount)}</span>
+                                        </div>
+
+                                        <div className="flex items-center gap-2">
+                                            <div className="relative flex-1">
+                                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">$</span>
+                                                <input
+                                                    type="text"
+                                                    value={sellAmountStr}
+                                                    onChange={(e) => {
+                                                        let val = e.target.value;
+
+                                                        // 1. Allow clearing the input completely
+                                                        if (val === '') {
+                                                            setSellAmountStr('');
+                                                            return;
+                                                        }
+
+                                                        // 2. Simple numeric check (regex for positive decimal)
+                                                        if (!/^\d*\.?\d*$/.test(val)) return;
+
+                                                        // 3. Strip leading zero (e.g. "05" -> "5") unless it's "0."
+                                                        if (val.length > 1 && val.startsWith('0') && val[1] !== '.') {
+                                                            val = val.substring(1);
+                                                        }
+
+                                                        // 4. Update state if within bounds
+                                                        const numVal = parseFloat(val);
+                                                        // Note: We check <= amount. We check isNaN only if val is not empty/dot, but regex handles that mostly.
+                                                        // Actually, just set it if it parses reasonably or is just a dot (handled by regex)
+                                                        if (!isNaN(numVal) && numVal <= amount) {
+                                                            setSellAmountStr(val);
+                                                        }
+                                                    }}
+                                                    className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-8 pr-4 text-white font-mono focus:outline-none focus:border-red-500/50 transition-colors"
+                                                />
+                                            </div>
+                                            <button
+                                                onClick={() => setSellAmountStr(amount.toString())}
+                                                className="px-3 py-3 bg-white/5 hover:bg-white/10 text-xs font-bold text-gray-300 rounded-xl border border-white/10 transition-colors"
+                                            >
+                                                MAX
+                                            </button>
+                                        </div>
+
+                                        <div className="flex gap-2">
+                                            {[0.25, 0.5, 0.75].map((pct) => (
+                                                <button
+                                                    key={pct}
+                                                    onClick={() => setSellAmountStr((amount * pct).toFixed(2))}
+                                                    className="flex-1 py-1.5 bg-white/5 hover:bg-white/10 text-[10px] font-bold text-gray-400 hover:text-white rounded-lg transition-colors border border-white/5"
+                                                >
+                                                    {pct * 100}%
+                                                </button>
+                                            ))}
                                         </div>
                                     </div>
-                                </div>
 
-                                <div className="grid grid-cols-2 gap-3">
-                                    <button
-                                        onClick={onBuyMore}
-                                        className="py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all shadow-lg shadow-blue-900/20"
-                                    >
-                                        Buy More
-                                    </button>
-                                    <button
-                                        onClick={onSell}
-                                        className="py-3 bg-white/5 hover:bg-white/10 text-gray-300 font-medium rounded-xl transition-all border border-white/10"
-                                    >
-                                        Sell Output
-                                    </button>
-                                </div>
-                            </>
+                                    <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl mb-6">
+                                        <div className="text-xs text-red-300 uppercase tracking-wider mb-1">Estimated Return</div>
+                                        {/* Pro-rated current value based on sell amount vs total amount */}
+                                        <div className="text-2xl font-bold text-white font-mono">
+                                            {formatUSD((currentValue || amount * 1.05) * (sellAmount / amount))}
+                                        </div>
+                                        <div className="text-xs text-red-300/60 mt-2">Funds returned to Investment Wallet</div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <button
+                                            onClick={() => onSell && onSell(sellAmount)}
+                                            disabled={sellAmount <= 0}
+                                            className="py-3 bg-red-500 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-all shadow-lg shadow-red-900/20"
+                                        >
+                                            {sellAmount >= amount ? 'Confirm Sell All' : 'Confirm Sell'}
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                setIsSellMode(false);
+                                                setSellAmountStr(amount.toString()); // Reset on cancel
+                                            }}
+                                            className="py-3 bg-white/5 hover:bg-white/10 text-gray-300 font-medium rounded-xl transition-all border border-white/10"
+                                        >
+                                            Cancel
+                                        </button>
+                                    </div>
+                                </motion.div>
+                            ) : (
+                                // STANDARD VIEW DETAILS
+                                <>
+                                    <div className="flex justify-between items-center mb-6">
+                                        <h3 className="text-white font-bold text-lg">Your Investment</h3>
+                                        <div className="px-2 py-1 bg-green-500/10 rounded text-green-400 text-xs font-bold uppercase tracking-wide">
+                                            ACTIVE
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-4 mb-8">
+                                        <div className="flex justify-between items-center p-3 bg-white/5 rounded-lg">
+                                            <span className="text-gray-400 text-sm">Principal</span>
+                                            <span className="text-white font-mono">{formatUSD(amount)}</span>
+                                        </div>
+                                        <div className="flex justify-between items-center p-3 bg-white/5 rounded-lg border border-green-500/20">
+                                            <span className="text-gray-400 text-sm">Current Value</span>
+                                            <span className="text-green-400 font-mono font-bold">{formatUSD(currentValue || amount * 1.05)}</span>
+                                        </div>
+                                        <div className="flex justify-between items-center px-1">
+                                            <span className="text-gray-400 text-sm">Total Returns</span>
+                                            <div className="text-right">
+                                                <div className="text-green-400 font-bold">+5.2%</div>
+                                                <div className="text-xs text-gray-500">+$245.32</div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <button
+                                            onClick={onBuyMore}
+                                            className="py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all shadow-lg shadow-blue-900/20"
+                                        >
+                                            Buy More
+                                        </button>
+                                        <button
+                                            onClick={() => setIsSellMode(true)}
+                                            className="py-3 bg-white/5 hover:bg-white/10 text-gray-300 font-medium rounded-xl transition-all border border-white/10"
+                                        >
+                                            Sell Output
+                                        </button>
+                                    </div>
+                                </>
+                            )
                         ) : (
                             // INVEST MODE: Review & Confirm
                             <>

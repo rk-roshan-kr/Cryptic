@@ -46,6 +46,17 @@
 }
 
 
+@font-face {
+  font-family: 'Metal Mania';
+  src: url('./assets/fonts/MetalMania-Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+.font-metal {
+  font-family: 'Metal Mania', cursive !important;
+}
+
 body {
   @apply bg-black text-white;
   transition: background-color .3s ease, color .3s ease;
@@ -1443,4 +1454,31 @@ body,
   .notification-actions {
     flex-direction: column;
   }
+}
+
+/* Custom Scrollbar Override */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #334155 transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+  background: transparent;
+  display: block !important;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #475569;
 }

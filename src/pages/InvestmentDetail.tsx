@@ -344,8 +344,8 @@ export default function InvestmentDetail() {
                             key={range}
                             onClick={() => setTimeRange(range)}
                             className={`px-4 py-2 text-sm rounded-lg transition-colors ${timeRange === range
-                                ? 'bg-green-500 text-black font-semibold'
-                                : 'bg-white/10 text-slate-400 hover:text-white hover:bg-white/20'
+                              ? 'bg-green-500 text-black font-semibold'
+                              : 'bg-white/10 text-slate-400 hover:text-white hover:bg-white/20'
                               }`}
                           >
                             {range}

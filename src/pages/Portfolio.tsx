@@ -11,10 +11,12 @@ import { transactionsStore, type Transaction } from '../state/transactions'
 import { motion, useMotionValue, useTransform, animate, AnimatePresence } from 'framer-motion'
 import { useUIStore } from '../state/uiStore'
 import { speedometerWoosh, thanosReverse, containerStagger, fadeInUp } from '../utils/animations'
+import PortfolioCrypto from './portfolio-crypto'
+import CryptoPortfolio from '../components/CryptoPortfolio/CryptoPortfolio'
 
 
 
-export default function Portfolio() {
+function PortfolioOriginal() {
     const [recentTransactions, setRecentTransactions] = useState<Transaction[]>([])
     const [balances, setBalances] = useState(cryptoStore.getAll())
     const [expandedAsset, setExpandedAsset] = useState<string | null>(null)
@@ -163,7 +165,7 @@ export default function Portfolio() {
 
     return (
         <motion.div
-            className="space-y-6 text-coolgray dark:text-slate-300 h-[calc(100vh-100px)] overflow-y-auto snap-y snap-mandatory pb-32 no-scrollbar"
+            className="space-y-6 text-coolgray dark:text-slate-300 h-[calc(100vh-48px)] overflow-y-auto snap-y snap-mandatory pb-8 no-scrollbar"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
@@ -316,13 +318,13 @@ export default function Portfolio() {
                     <div className="flex flex-col h-full overflow-hidden">
                         {/* Header for list could go here */}
                         <motion.div
-                            className="overflow-y-auto no-scrollbar p-1 flex-1 h-full pb-12"
+                            className="overflow-y-auto custom-scrollbar pr-2 flex-1 h-full max-h-[500px] pb-12 overscroll-contain"
                             variants={containerStagger}
                             initial="hidden"
                             animate="visible"
                             key={showCinematicIntro ? 'cinematic-list' : 'standard-list'} // Force remount for stagger
                         >
-                            {assets.map(asset => (
+                            {assets.filter(a => a.valueUsd > 0).map(asset => (
                                 <motion.div
                                     key={asset.symbol}
                                     variants={showCinematicIntro ? thanosReverse : fadeInUp}
@@ -382,5 +384,39 @@ export default function Portfolio() {
                 </Card>
             </motion.section>
         </motion.div>
+    )
+}
+
+export default function Portfolio() {
+    const [view, setView] = useState<'v1' | 'v2' | 'v3'>('v1')
+
+    return (
+        <div className="relative h-full w-full">
+            {view === 'v1' && <PortfolioOriginal />}
+            {view === 'v2' && <PortfolioCrypto />}
+            {view === 'v3' && <CryptoPortfolio />}
+
+            {/* Floating Toggle Button */}
+            <div className="fixed bottom-6 right-6 z-50 flex gap-2 p-1 bg-black/50 backdrop-blur-md border border-white/10 rounded-full">
+                <button
+                    onClick={() => setView('v1')}
+                    className={`px-4 py-2 text-xs font-bold rounded-full transition-all ${view === 'v1' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
+                >
+                    Standard
+                </button>
+                <button
+                    onClick={() => setView('v2')}
+                    className={`px-4 py-2 text-xs font-bold rounded-full transition-all ${view === 'v2' ? 'bg-purple-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
+                >
+                    Crypto
+                </button>
+                <button
+                    onClick={() => setView('v3')}
+                    className={`px-4 py-2 text-xs font-bold rounded-full transition-all ${view === 'v3' ? 'bg-green-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
+                >
+                    Manager
+                </button>
+            </div>
+        </div>
     )
 }

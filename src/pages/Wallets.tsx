@@ -11,6 +11,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { containerStagger, fadeInUp, thanosReverse } from '../utils/animations'
 import { useUIStore } from '../state/uiStore'
 import { Wallet, Send, ArrowDown, Landmark } from 'lucide-react'
+import { Toast, ToastType } from '../components/common/Toast'
 
 
 
@@ -64,6 +65,17 @@ export default function Wallets() {
   const [showAddBank, setShowAddBank] = useState(false)
   const [newBank, setNewBank] = useState({ name: '', number: '', ifsc: '', type: 'Checking' })
   const [editingBankId, setEditingBankId] = useState<string | null>(null)
+
+  // Toast State
+  const [toast, setToast] = useState<{ open: boolean; message: string; type: ToastType }>({
+    open: false,
+    message: '',
+    type: 'success'
+  })
+
+  const showToast = (message: string, type: ToastType = 'success') => {
+    setToast({ open: true, message, type })
+  }
 
   // Subscribe to transaction updates
   useEffect(() => {
@@ -1043,7 +1055,7 @@ export default function Wallets() {
 
                           if (success) {
                             const bank = savedBanks.find(b => b.id === selectedBank)
-                            alert(`Successfully withdrew $${amt.toFixed(2)} to ${bank?.name} (${bank?.mask})`)
+                            showToast(`Successfully withdrew $${amt.toFixed(2)} to ${bank?.name} (${bank?.mask})`, 'success')
                             setWithdrawAmount('')
 
                             transactionsStore.add({
@@ -1059,10 +1071,10 @@ export default function Wallets() {
                               recipientFull: `Transfer to ${bank?.name} ${bank?.mask}`,
                               self: true,
                               status: 'Completed',
-                              type: 'transfer' // or 'withdrawal' pattern if preferred
+                              type: 'transfer'
                             })
                           } else {
-                            alert('Transaction failed: Insufficient funds')
+                            showToast('Transaction failed: Insufficient funds', 'error')
                           }
                         }, 1500)
                       }}

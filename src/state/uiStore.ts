@@ -12,6 +12,10 @@ interface UIState {
     // --- New Hover State ---
     hoveredAsset: string | null
     setHoveredAsset: (symbol: string | null) => void
+
+    // Global Modals
+    isProfileOpen: boolean
+    toggleProfile: () => void
 }
 
 export const useUIStore = create<UIState>()(
@@ -27,6 +31,9 @@ export const useUIStore = create<UIState>()(
             // Initial value
             hoveredAsset: null,
             setHoveredAsset: (symbol) => set({ hoveredAsset: symbol }),
+
+            isProfileOpen: false,
+            toggleProfile: () => set((state) => ({ isProfileOpen: !state.isProfileOpen })),
         }),
         {
             name: 'ui-storage',

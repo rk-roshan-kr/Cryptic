@@ -11,9 +11,9 @@ import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import React from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useUIStore } from '../../state/uiStore'
-
+import { ProfileModal } from '../common/ProfileModal'
 import ShowChartIcon from '@mui/icons-material/ShowChart'
 
 const drawerWidth = 200
@@ -23,7 +23,7 @@ export default function Layout({ children }: { children: ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
   const location = useLocation()
-  const { showGradients, enableAnimations } = useUIStore()
+  const { showGradients, enableAnimations, toggleProfile } = useUIStore()
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen)
@@ -55,7 +55,7 @@ export default function Layout({ children }: { children: ReactNode }) {
       <div className={`px-6 py-6 transition-all duration-300 ${collapsed ? 'px-2' : ''}`}>
         {!collapsed && (
           <>
-            <Typography variant="h6" className="text-[var(--accent)] font-black tracking-widest">CRYPTIC</Typography>
+            <Typography variant="h6" className="text-[var(--accent)] font-black tracking-widest font-metal">CRYPTIC</Typography>
             <Typography variant="body2" className="text-slate-300">Tagline bata do bhai!</Typography>
           </>
         )}
@@ -100,7 +100,12 @@ export default function Layout({ children }: { children: ReactNode }) {
           <NavLink to="/app/settings" className="text-slate-400 hover:text-white transition-colors" title="Settings">
             <SettingsIcon sx={{ fontSize: 20 }} />
           </NavLink>
-          <IconButton size="small" sx={{ color: 'rgb(148, 163, 184)', '&:hover': { color: 'white' }, p: 0 }} title="Profile">
+          <IconButton
+            size="small"
+            sx={{ color: 'rgb(148, 163, 184)', '&:hover': { color: 'white' }, p: 0 }}
+            title="Profile"
+            onClick={toggleProfile}
+          >
             <PersonIcon sx={{ fontSize: 20 }} />
           </IconButton>
         </div>
@@ -113,45 +118,105 @@ export default function Layout({ children }: { children: ReactNode }) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
+  const [navVisible, setNavVisible] = useState(true)
+  const lastScrollY = React.useRef(0)
+
+  // Optimized Scroll Handler
+  const handleScroll = React.useCallback((e: React.UIEvent<HTMLElement>) => {
+    if (!isMobile) return
+    const target = e.target as HTMLElement
+    const currentScroll = target.scrollTop
+
+    // Buffer to prevent jitter on small scrolls
+    if (Math.abs(currentScroll - lastScrollY.current) < 20) return
+
+    // Hide if scrolling down & not at top, Show if scrolling up
+    if (currentScroll > lastScrollY.current && currentScroll > 60) {
+      setNavVisible(false)
+    } else {
+      setNavVisible(true)
+    }
+    lastScrollY.current = currentScroll
+  }, [isMobile])
+
   return (
-    <Box sx={{ display: 'flex', height: '100vh' }} className={`${showGradients ? 'theme-gradients' : ''} ${!enableAnimations ? 'disable-animations' : ''}`}>
+    <Box
+      sx={{ display: 'flex', height: '100vh', overflow: 'hidden' }}
+      className={`${showGradients ? 'theme-gradients' : ''} ${!enableAnimations ? 'disable-animations' : ''}`}
+      onScrollCapture={handleScroll}
+    >
       <CssBaseline />
-      {isMobile ? (
-        <Box
-          component="nav"
-          sx={{
-            position: 'fixed',
-            bottom: 0,
-            left: 0,
-            right: 0,
-            zIndex: (theme) => theme.zIndex.appBar + 10,
-            height: '80px',
-            backgroundColor: 'rgba(15, 15, 16, 0.9)',
-            backdropFilter: 'blur(12px)',
-            borderTop: '1px solid rgba(255, 255, 255, 0.08)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-around',
-            px: 2,
-            pb: 'max(8px, env(safe-area-inset-bottom))'
-          }}
-        >
-          {navItems.filter(i => i.label !== 'Crypto Test').map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              className={({ isActive }) => `flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${isActive ? 'text-[var(--accent)]' : 'text-slate-400 hover:text-white'}`}
-            >
-              <div className="bg-transparent p-1 rounded-full">
-                {React.cloneElement(item.icon, { sx: { fontSize: 22, color: 'inherit' } })}
-              </div>
-              <span className="text-[10px] font-medium tracking-wide">
-                {item.label === 'Overview' ? 'Home' : item.label}
-              </span>
-            </NavLink>
-          ))}
-        </Box>
-      ) : (
+      <AnimatePresence>
+        {isMobile && navVisible && (
+          <motion.div
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 100, opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+            style={{
+              position: 'fixed',
+              bottom: '24px',
+              left: '16px',
+              right: '16px',
+              zIndex: 1400, // High z-index to sit above everything
+              pointerEvents: 'none' // Allows clicks pass through the empty space around the bar
+            }}
+          >
+            {/* The Actual "Island" Container */}
+            <div className="pointer-events-auto bg-[#13141b]/90 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl shadow-black/80 flex items-center justify-between px-2 py-2">
+
+              {/* Render Nav Items (Filter out desktop-only items if needed) */}
+              {navItems.filter(i => !(i as any).desktopOnly && i.label !== 'Crypto Test').map((item) => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  className="relative flex flex-col items-center justify-center p-1 flex-1 h-[56px] min-w-[56px] group active:scale-95 transition-transform duration-100"
+                >
+                  {({ isActive }) => (
+                    <>
+                      {/* Active "Lamp" Glow Effect */}
+                      {isActive && (
+                        <motion.div
+                          layoutId="mobile-lamp"
+                          className="absolute inset-0"
+                          transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                        >
+                          {/* Top Light Bar */}
+                          <div className="absolute -top-[1px] left-1/2 -translate-x-1/2 w-8 h-[2px] bg-blue-400 shadow-[0_2px_12px_rgba(59,130,246,0.8)] rounded-full" />
+                          {/* Gradient Wash */}
+                          <div className="absolute inset-0 bg-gradient-to-b from-blue-500/20 to-transparent rounded-xl" />
+                        </motion.div>
+                      )}
+
+                      {/* Icon Animation */}
+                      <div className={`relative z-10 transition-all duration-300 ${isActive ? '-translate-y-1' : 'translate-y-1'}`}>
+                        {React.cloneElement(item.icon as React.ReactElement, {
+                          sx: {
+                            fontSize: 24,
+                            color: isActive ? '#fff' : '#64748b',
+                            filter: isActive ? 'drop-shadow(0 0 8px rgba(59,130,246,0.5))' : 'none'
+                          }
+                        })}
+                      </div>
+
+                      {/* Label Fade In */}
+                      <motion.span
+                        initial={false}
+                        animate={{ opacity: isActive ? 1 : 0, y: isActive ? 0 : 4 }}
+                        className="text-[10px] font-bold text-white absolute bottom-1.5"
+                      >
+                        {item.label === 'Overview' ? 'Home' : item.label === 'Active Invs.' ? 'Active' : item.label}
+                      </motion.span>
+                    </>
+                  )}
+                </NavLink>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {!isMobile && (
         <Box component="nav" sx={{ width: { sm: currentDrawerWidth }, flexShrink: { sm: 0 }, position: 'fixed', height: '100vh', zIndex: (theme) => theme.zIndex.appBar - 1 }} aria-label="mailbox folders">
           <Drawer
             variant="temporary"
@@ -200,6 +265,8 @@ export default function Layout({ children }: { children: ReactNode }) {
           ml: { sm: isMobile ? 0 : `${currentDrawerWidth}px` },
           transition: 'margin-left 0.3s ease',
           pb: isMobile ? '120px' : '0',
+          overflowY: 'auto',
+          height: '100%',
         }}
       >
         <motion.div
@@ -210,6 +277,7 @@ export default function Layout({ children }: { children: ReactNode }) {
           {children}
         </motion.div>
       </Box>
+      <ProfileModal />
     </Box>
   );
 }

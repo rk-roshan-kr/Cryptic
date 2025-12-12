@@ -13,9 +13,9 @@ export default function Landing() {
       alignItems: 'center'
     }}>
       <Container maxWidth="md" sx={{ textAlign: 'center' }}>
-        <Typography variant="h2" sx={{ fontWeight: 900, color: '#fff', letterSpacing: '0.1em' }}>CRYPTIC</Typography>
+        <Typography variant="h2" className="font-metal" sx={{ fontWeight: 900, color: '#fff', letterSpacing: '0.1em' }}>CRYPTIC</Typography>
         <Typography variant="h6" sx={{ mt: 2, color: '#cbd0f8' }}>
-          Manage wallets, track portfolio, and automate treasury flows with a clean, dark UI.
+          Manage wallets, track portfolio, and automate treasury flows .
         </Typography>
         <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 24 }}>
           <Button component={RouterLink} to="/app/overview" size="large" variant="contained" color="primary">

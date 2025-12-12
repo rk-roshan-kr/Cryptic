@@ -108,7 +108,7 @@ export default function Dashboard() {
           <div className="max-w-7xl mx-auto">
             <div className="text-center mb-8">
               <Typography variant="h2" className="text-white font-bold mb-4" style={{ textShadow: '0 0 20px rgba(59,130,246,0.5)' }}>
-                <span className="font-black tracking-widest text-[var(--accent)]">CRYPTIC</span>
+                <span className="font-black tracking-widest text-[var(--accent)] font-metal">CRYPTIC</span>
               </Typography>
               <Typography variant="h6" className="text-slate-300 mb-6">
                 Manage your digital assets with precision and insight

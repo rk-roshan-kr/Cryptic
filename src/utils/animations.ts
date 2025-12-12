@@ -159,4 +159,57 @@ export const textFadeIn: Variants = {
         scale: 0.9,
         transition: { duration: 0.1 }
     }
+
+};
+
+
+
+// --- NEW: "ALIVE" LIQUID GRADIENT ---
+
+// 1. The Style Helper: Creates a complex, oversized background
+export const getLiquidGradientStyle = (color: string) => ({
+    // We create 3 distinct splash zones that will blend together
+    backgroundImage: `
+        radial-gradient(circle at 20% 30%, ${color}40 0%, transparent 50%),
+        radial-gradient(circle at 80% 70%, ${color}40 0%, transparent 50%),
+        radial-gradient(circle at 50% 50%, ${color}20 0%, transparent 60%)
+    `,
+    // Make the background huge so we can move it around
+    backgroundSize: "200% 200%",
+    // Blend mode helps the colors mix luminously on the dark bg
+    mixBlendMode: "plus-lighter" as const,
+});
+
+// 2. The Animation Variant: Slowly shifts the background position
+export const liquidMovement: Variants = {
+    noGlow: { opacity: 0 },
+    // The "breathing" state when just sitting there
+    idle: {
+        opacity: 0.6,
+        backgroundPosition: ["0% 0%", "100% 100%"], // Move diagonally
+        scale: 1,
+        transition: {
+            backgroundPosition: {
+                duration: 15, // Slow, continuous movement
+                ease: "linear",
+                repeat: Infinity,
+                repeatType: "mirror" // Go back and forth smoothly
+            }
+        }
+    },
+    // The "active" state when hovering/expanded
+    active: {
+        opacity: 1,
+        scale: 1.05, // Slight swell
+        backgroundPosition: ["0% 0%", "100% 50%", "50% 100%", "0% 0%"], // More complex movement pattern
+        transition: {
+            opacity: { duration: 0.3 },
+            scale: { duration: 0.3 },
+            backgroundPosition: {
+                duration: 20, // Slower, more complex path
+                ease: "linear",
+                repeat: Infinity,
+            }
+        }
+    }
 };
