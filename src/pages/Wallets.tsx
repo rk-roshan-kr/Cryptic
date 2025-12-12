@@ -51,7 +51,7 @@ const SpotlightCard = ({ children, className = "", onClick }: any) => {
 }
 
 export default function Wallets() {
-  const { showGradients } = useUIStore()
+  const { showGradients, toggleProfile } = useUIStore()
   const [hideAmounts, setHideAmounts] = useState(false)
 
   type TabKey = 'balance' | 'send' | 'receive' | 'withdraw'
@@ -93,6 +93,7 @@ export default function Wallets() {
   const [withdrawAmount, setWithdrawAmount] = useState<string>('')
   const [selectedBank, setSelectedBank] = useState<string>('bank_1')
   const [isWithdrawing, setIsWithdrawing] = useState(false)
+  const [showConnectModal, setShowConnectModal] = useState<'upi' | 'paypal' | null>(null)
 
   const [savedBanks, setSavedBanks] = useState([
     { id: 'bank_1', name: 'Chase Bank', mask: '****8899', type: 'Checking', icon: '🏦' },
@@ -101,6 +102,10 @@ export default function Wallets() {
   const [showAddBank, setShowAddBank] = useState(false)
   const [newBank, setNewBank] = useState({ name: '', number: '', ifsc: '', type: 'Checking' })
   const [editingBankId, setEditingBankId] = useState<string | null>(null)
+
+  // UPI & PayPal State
+  const [upiId, setUpiId] = useState('')
+  const [paypalEmail, setPaypalEmail] = useState('')
 
   // Toast State
   const [toast, setToast] = useState<{ open: boolean; message: string; type: ToastType }>({
@@ -345,24 +350,14 @@ export default function Wallets() {
             <div className="wallet-status-bar">
 
 
-              <div className="wallet-row">
-                <button className="wallet-icon-btn" title="Profile">
+              <div className="wallet-row my-2">
+                <button className="wallet-icon-btn" title="Profile" onClick={toggleProfile}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                     <circle cx="12" cy="8" r="4" stroke="#b8bffa" strokeWidth="1.8" />
                     <path d="M4 20c2.5-4 13.5-4 16 0" stroke="#b8bffa" strokeWidth="1.8" strokeLinecap="round" />
                   </svg>
                 </button>
-                <button className="wallet-icon-btn" title="Security">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <path d="M12 3l7 3v6c0 5-3.5 8-7 9-3.5-1-7-4-7-9V6l7-3z" stroke="#b8bffa" strokeWidth="1.8" />
-                  </svg>
-                </button>
-                <button className="wallet-icon-btn" title="Notifications">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <path d="M6 18h12l-1.6-2.7a7 7 0 0 1-1-3.6V9a4.4 4.4 0 0 0-8.8 0v2.7c0 1.3-.34 2.5-1 3.6L6 18z" stroke="#b8bffa" strokeWidth="1.8" />
-                    <circle cx="12" cy="20.2" r="1.6" fill="#b8bffa" />
-                  </svg>
-                </button>
+
                 <button className="wallet-icon-btn" title="Hide/Show balances" onClick={() => setHideAmounts((v) => !v)} aria-pressed={hideAmounts}>
                   {hideAmounts ? (
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -1026,7 +1021,17 @@ export default function Wallets() {
                             return (
                               <button
                                 key={method.id}
-                                onClick={() => setSelectedBank(method.id)}
+                                onClick={() => {
+                                  if (method.id === 'upi' && !upiId) {
+                                    setShowConnectModal('upi')
+                                    return
+                                  }
+                                  if (method.id === 'paypal' && !paypalEmail) {
+                                    setShowConnectModal('paypal')
+                                    return
+                                  }
+                                  setSelectedBank(method.id)
+                                }}
                                 className={`
                           relative flex items-center gap-3 p-3 rounded-xl border transition-all min-w-[140px] sm:min-w-0 flex-1
                           ${isSelected
@@ -1043,7 +1048,9 @@ export default function Wallets() {
                                 </div>
                                 <div className="text-left">
                                   <div className="text-sm font-bold text-white">{method.name}</div>
-                                  <div className="text-[10px] text-[#8b90b2]">{method.label}</div>
+                                  <div className="text-[10px] text-[#8b90b2]">
+                                    {(method.id === 'upi' && upiId) ? upiId : (method.id === 'paypal' && paypalEmail) ? 'Connected' : method.label}
+                                  </div>
                                 </div>
                               </button>
                             )
@@ -1067,6 +1074,9 @@ export default function Wallets() {
                           <button onClick={() => setWithdrawAmount(investmentBalance.toFixed(2))} className="text-[10px] font-bold bg-[#6a7bff]/20 text-[#6a7bff] px-3 py-1.5 rounded-lg border border-blue-500/20">MAX</button>
                         </div>
                       </div>
+
+
+
 
                       {/* Input Box - BIG for Mobile */}
                       <div className="relative mb-6 relative z-10">
@@ -1110,12 +1120,37 @@ export default function Wallets() {
                         onClick={() => {
                           const amt = parseFloat(withdrawAmount)
                           if (!amt) return
+
+                          // Validation for UPI/PayPal
+                          if (selectedBank === 'upi' && !upiId) {
+                            showToast('Please enter a valid UPI ID', 'error')
+                            return
+                          }
+                          if (selectedBank === 'paypal' && !paypalEmail) {
+                            showToast('Please enter a PayPal email', 'error')
+                            return
+                          }
+
                           setIsWithdrawing(true)
                           setTimeout(() => {
                             investmentWallet.subtract(amt, 'Withdrawal')
                             setIsWithdrawing(false)
                             setWithdrawAmount('')
-                            showToast(`Successfully withdrew $${amt.toFixed(2)}`, 'success')
+
+                            let dest = 'Bank Account'
+                            if (selectedBank === 'upi') dest = `UPI (${upiId})`
+                            else if (selectedBank === 'paypal') dest = `PayPal (${paypalEmail})`
+                            else {
+                              const b = savedBanks.find(x => x.id === selectedBank)
+                              if (b) dest = `${b.name} (${b.mask})`
+                            }
+
+                            showToast(`Successfully withdrew $${amt.toFixed(2)} to ${dest}`, 'success')
+
+                            // Reset optional fields
+                            if (selectedBank === 'upi') setUpiId('')
+                            if (selectedBank === 'paypal') setPaypalEmail('')
+
                           }, 1500)
                         }}
                         className={`
@@ -1139,6 +1174,61 @@ export default function Wallets() {
                 </div>
               </motion.div>
             )}
+
+            {/* Generic Connect Modal (Reuse styles from Add Bank slightly) */}
+            <AnimatePresence>
+              {showConnectModal && (
+                <motion.div
+                  initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                  className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md"
+                >
+                  <div className="absolute inset-0" onClick={() => setShowConnectModal(null)} />
+                  <motion.div
+                    initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }}
+                    className="bg-[#1b1f4a] border border-[#6a7bff]/30 rounded-2xl p-8 w-full max-w-sm shadow-2xl relative z-10 flex flex-col items-center text-center"
+                  >
+                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#6a7bff] to-[#4f5eff] flex items-center justify-center mb-6 shadow-lg shadow-blue-500/25">
+                      {showConnectModal === 'upi'
+                        ? <svg width="32" height="32" viewBox="0 0 24 24" fill="none"><path d="M4 14L12 2L20 14H4Z" fill="white" /><path d="M4 14L12 22L20 14H4Z" fill="white" opacity="0.5" /></svg>
+                        : <svg width="28" height="28" viewBox="0 0 24 24" fill="white"><path d="M20.067 8.478c.492.3.844.768 1.054 1.405 0 0 .524 1.572.678 2.043.19.581-.237 1.041-1.054 1.041h-2.148l-.513 3.193c-.007.037-.024.068-.057.086a.2.2 0 0 1-.098.024h-2.31c-.133 0-.226-.122-.19-.25l.892-5.589-1.996-8.913a.465.465 0 0 1 .46-.576h2.95c.789 0 1.503.491 1.764 1.258l.618 2.378c.073.284.341.488.647.488h1.254c.481 0 .973-.085 1.411-.336.19-.109.288-.336.213-.54-.083-.223-.298-.363-.538-.363h-.043z" /></svg>
+                      }
+                    </div>
+
+                    <h3 className="text-2xl font-bold text-white mb-2">Connect {showConnectModal === 'upi' ? 'UPI' : 'PayPal'}</h3>
+                    <p className="text-[#8b90b2] text-sm mb-6">Enter your details to link this payment method for instant withdrawals.</p>
+
+                    <div className="w-full text-left space-y-4 mb-6">
+                      <div>
+                        <label className="text-xs font-bold text-white uppercase tracking-wider mb-2 block">
+                          {showConnectModal === 'upi' ? 'UPI ID' : 'PayPal Email'}
+                        </label>
+                        <input
+                          autoFocus
+                          className="w-full bg-[#0f1230] border border-[#2a2c54] rounded-xl p-4 text-white focus:border-[#6a7bff] outline-none transition-colors text-lg"
+                          placeholder={showConnectModal === 'upi' ? 'username@oksbi' : 'you@example.com'}
+                          value={showConnectModal === 'upi' ? upiId : paypalEmail}
+                          onChange={e => showConnectModal === 'upi' ? setUpiId(e.target.value) : setPaypalEmail(e.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => {
+                        if (showConnectModal === 'upi' && !upiId) return
+                        if (showConnectModal === 'paypal' && !paypalEmail) return
+
+                        setSelectedBank(showConnectModal)
+                        setShowConnectModal(null)
+                        showToast(`Successfully connected ${showConnectModal === 'upi' ? 'UPI' : 'PayPal'}`, 'success')
+                      }}
+                      className="w-full py-4 bg-gradient-to-r from-[#6a7bff] to-[#4f5eff] text-white font-bold rounded-xl hover:shadow-lg hover:shadow-blue-500/25 transition-all active:scale-[0.98]"
+                    >
+                      Link Account
+                    </button>
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             <AnimatePresence>
               {showAddBank && (
