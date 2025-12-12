@@ -10,7 +10,6 @@ const Wallets = React.lazy(() => import('./pages/Wallets'))
 const Wallet = React.lazy(() => import('./pages/Wallet'))
 const WalletCombined = React.lazy(() => import('./pages/WalletCombined'))
 const Portfolio = React.lazy(() => import('./pages/Portfolio'))
-const Settings = React.lazy(() => import('./pages/Settings'))
 const CryptoTest = React.lazy(() => import('./pages/CryptoTest'))
 const Investment = React.lazy(() => import('./pages/Investment'))
 const InvestmentDetail = React.lazy(() => import('./pages/InvestmentDetail'))
@@ -119,14 +118,6 @@ export default function App() {
             element={
               <Layout>
                 <Marketplace />
-              </Layout>
-            }
-          />
-          <Route
-            path="/app/settings"
-            element={
-              <Layout>
-                <Settings />
               </Layout>
             }
           />

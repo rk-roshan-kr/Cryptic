@@ -121,17 +121,17 @@ export default function InvestmentChart({ data, onHover, activeSymbol }: { data:
   }, [onHover])
 
   return (
-    <div style={{ width: '100%', height: '100%', overflow: 'hidden', minHeight: 320 }}>
+    <div style={{ width: '100%', height: '100%', minHeight: 320, overflow: 'visible' }}>
       <ResponsiveContainer>
-        <PieChart margin={{ top: 0, right: 30, bottom: 0, left: 30 }}>
+        <PieChart margin={{ top: 40, right: 40, bottom: 40, left: 40 }} style={{ overflow: 'visible' }}>
           <Pie
             activeIndex={activeIndex}
             activeShape={renderActiveShape}
             data={data}
             cx="50%"
             cy="50%"
-            innerRadius={90}
-            outerRadius={120}
+            innerRadius={70}
+            outerRadius={110}
             paddingAngle={3}
             dataKey="percent"
             onMouseEnter={onPieEnter}
@@ -155,7 +155,7 @@ export default function InvestmentChart({ data, onHover, activeSymbol }: { data:
             cx="50%"
             cy="50%"
             innerRadius={90}
-            outerRadius={160} // 120 * 1.33 ≈ 160
+            outerRadius={146} // 110 * 1.33 ≈ 146
             dataKey="percent"
             onMouseEnter={onPieEnter}
             onMouseLeave={onPieLeave}

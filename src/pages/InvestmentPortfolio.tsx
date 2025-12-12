@@ -266,14 +266,14 @@ export default function InvestmentPortfolio() {
                             transition={{ delay: 0.2 }}
                             className="lg:col-span-5 lg:sticky lg:top-6"
                         >
-                            <div className="card-base p-6 bg-[#1f1f22] border border-white/5 rounded-2xl">
+                            <div className="card-base p-6 bg-[#1f1f22] border border-white/5 rounded-2xl !overflow-visible">
                                 <div className="flex items-center justify-between mb-8">
                                     <h3 className="text-lg font-bold text-white">Allocation</h3>
                                     <span className="text-xs font-bold px-2 py-1 rounded bg-white/5 text-slate-400">BY ASSET</span>
                                 </div>
 
                                 {/* RESTORED: Robust Aspect Ratio Container */}
-                                <div className="aspect-square w-full max-w-[380px] mx-auto relative flex items-center justify-center">
+                                <div className="aspect-square w-full max-w-[380px] mx-auto relative flex items-center justify-center !overflow-visible z-10">
                                     <motion.div
                                         className="w-full h-full"
                                         variants={showCinematicIntro ? speedometerWoosh : undefined}

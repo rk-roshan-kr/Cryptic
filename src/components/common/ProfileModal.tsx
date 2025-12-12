@@ -1,11 +1,11 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useUIStore } from '../../state/uiStore'
 import { Modal } from './Modal'
 import {
     User, Mail, Shield, Smartphone, Key, LayoutDashboard, Settings,
     Activity, HelpCircle, LogOut, Copy, Eye, EyeOff, ChevronRight,
     CreditCard, Bell, Moon, Languages, AlertTriangle, FileText, ExternalLink,
-    PieChart as PieChartIcon, Check
+    PieChart as PieChartIcon, Check, X, MapPin, Wallet, TrendingUp, Bitcoin
 } from 'lucide-react'
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -26,11 +26,50 @@ const ASSET_DATA = [
 
 type Tab = 'overview' | 'security' | 'preferences' | 'activity' | 'support'
 
+import { cryptoMeta } from '../../state/cryptoMeta'
+import type { CryptoSymbol } from '../../state/cryptoStore'
+import { Switch, FormControlLabel, TextField, Box, Typography } from '@mui/material'
+
+// Types for wallet-specific sweep settings
+interface WalletSweepSettings {
+    enabled: boolean
+    threshold: string
+}
+
+interface WalletSweepSettingsMap {
+    [wallet: string]: WalletSweepSettings
+}
+
 export const ProfileModal = () => {
-    const { isProfileOpen, toggleProfile } = useUIStore()
+    const { isProfileOpen, toggleProfile, showGradients, toggleGradients, enableAnimations, toggleAnimations, showCinematicIntro, toggleCinematicIntro } = useUIStore()
     const [activeTab, setActiveTab] = useState<Tab>('overview')
     const [hideBalance, setHideBalance] = useState(false)
     const [notifications, setNotifications] = useState({ email: true, push: false, price: true })
+    const [hideAmounts, setHideAmounts] = useState(false) // Migrated from Settings
+
+    // Wallet-specific sweep settings (Migrated)
+    const [walletSweepSettings, setWalletSweepSettings] = useState<WalletSweepSettingsMap>(() => {
+        const saved = localStorage.getItem('wallet_sweep_settings')
+        return saved ? JSON.parse(saved) : {}
+    })
+
+    // Save sweep settings to localStorage whenever they change
+    useEffect(() => {
+        localStorage.setItem('wallet_sweep_settings', JSON.stringify(walletSweepSettings))
+    }, [walletSweepSettings])
+
+    const getSweepSettings = (wallet: CryptoSymbol) => {
+        return walletSweepSettings[wallet] || { enabled: false, threshold: '' }
+    }
+
+    const setSweepSettings = (wallet: CryptoSymbol, settings: WalletSweepSettings) => {
+        setWalletSweepSettings(prev => ({
+            ...prev,
+            [wallet]: settings
+        }))
+    }
+
+    const availableWallets: CryptoSymbol[] = ['BTC', 'ETH', 'USDT', 'SOL', 'BAT', 'SEPOLIA_ETH']
 
     // Derived state
     const tabs: { id: Tab; label: string; icon: any }[] = [
@@ -63,75 +102,104 @@ export const ProfileModal = () => {
                                         <span className="w-1 h-1 rounded-full bg-slate-600" />
                                         <span>UID: 88291039</span>
                                     </div>
-                                    <div className="flex flex-wrap justify-center md:justify-start gap-2">
-                                        <span className="px-3 py-1 bg-blue-500/20 text-blue-400 text-xs font-bold uppercase rounded-lg border border-blue-500/20 shadow-[0_0_10px_rgba(59,130,246,0.2)]">VIP Tier 1</span>
-                                        <span className="px-3 py-1 bg-emerald-500/20 text-emerald-400 text-xs font-bold uppercase rounded-lg border border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.2)]">Verified</span>
-                                    </div>
                                 </div>
                             </div>
                         </div>
 
                         {/* Details Grid */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {/* Identity & Limits */}
-                            <div className="space-y-6">
+                        {/* Details Grid */}
+                        <div className="flex flex-col gap-6">
+                            {/* Identity */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="bg-[#13141b] border border-white/5 p-5 rounded-2xl">
                                     <h3 className="text-white font-bold mb-4 flex items-center gap-2">
-                                        <Shield size={18} className="text-blue-400" /> Verification Status
+                                        <Shield size={18} className="text-blue-400" /> Account Status
                                     </h3>
-                                    <div className="space-y-4">
-                                        <div className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/5">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center text-green-400">
-                                                    <Check size={14} strokeWidth={3} />
-                                                </div>
-                                                <div>
-                                                    <p className="text-white text-sm font-medium">Identity Verified</p>
-                                                    <p className="text-slate-500 text-xs">Level 2 (Fiat & Crypto)</p>
-                                                </div>
+                                    <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/5">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center text-green-400">
+                                                <Check size={18} strokeWidth={3} />
                                             </div>
-                                            <span className="text-green-400 text-xs font-bold">ACTIVE</span>
+                                            <div>
+                                                <p className="text-white font-medium">Active Account</p>
+                                                <p className="text-slate-500 text-xs">Full Access</p>
+                                            </div>
                                         </div>
+                                        <span className="px-3 py-1 bg-green-500/10 text-green-400 text-xs font-bold rounded-lg border border-green-500/20">VERIFIED</span>
+                                    </div>
+                                </div>
 
-                                        <div className="p-4 rounded-xl bg-blue-500/5 border border-blue-500/10">
-                                            <div className="flex justify-between text-sm mb-2">
-                                                <span className="text-slate-400">Daily Withdrawal Limit</span>
-                                                <span className="text-white font-bold">100 BTC</span>
-                                            </div>
-                                            <div className="flex justify-between text-sm">
-                                                <span className="text-slate-400">P2P Trading</span>
-                                                <span className="text-green-400 font-bold">Enabled</span>
-                                            </div>
+                                <div className="bg-[#13141b] border border-white/5 p-5 rounded-2xl">
+                                    <h3 className="text-white font-bold mb-4 flex items-center gap-2">
+                                        <User size={18} className="text-purple-400" /> Personal Details
+                                    </h3>
+                                    <div className="space-y-3">
+                                        <div className="flex items-center justify-between text-sm">
+                                            <span className="text-slate-400 flex items-center gap-2"><Smartphone size={14} /> Phone</span>
+                                            <span className="text-white font-medium">+1 (555) 123-4567</span>
+                                        </div>
+                                        <div className="flex items-center justify-between text-sm">
+                                            <span className="text-slate-400 flex items-center gap-2"><Mail size={14} /> Email</span>
+                                            <span className="text-white font-medium">guest@cryptic.com</span>
+                                        </div>
+                                        <div className="flex items-center justify-between text-sm">
+                                            <span className="text-slate-400 flex items-center gap-2"><MapPin size={14} /> City</span>
+                                            <span className="text-white font-medium">New York, USA</span>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Security Snapshot */}
-                            <div className="bg-[#13141b] border border-white/5 p-5 rounded-2xl flex flex-col">
+                            {/* Financial Accounts */}
+                            <div className="bg-[#13141b] border border-white/5 p-5 rounded-2xl">
                                 <h3 className="text-white font-bold mb-4 flex items-center gap-2">
-                                    <Activity size={18} className="text-purple-400" /> Security Score
+                                    <Wallet size={18} className="text-emerald-400" /> Financial Accounts
                                 </h3>
-                                <div className="flex-1 flex flex-col items-center justify-center py-6">
-                                    <div className="relative w-32 h-32 flex items-center justify-center mb-4">
-                                        {/* Simple CSS Donut for Score */}
-                                        <svg className="w-full h-full transform -rotate-90">
-                                            <circle cx="64" cy="64" r="56" stroke="#1f2937" strokeWidth="12" fill="none" />
-                                            {/* 85% stroke */}
-                                            <circle cx="64" cy="64" r="56" stroke="#10b981" strokeWidth="12" fill="none" strokeDasharray="351" strokeDashoffset="52" strokeLinecap="round" />
-                                        </svg>
-                                        <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                            <span className="text-3xl font-bold text-white">85</span>
-                                            <span className="text-xs text-green-400 font-medium">Strong</span>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {/* Demat Account */}
+                                    <div className="p-4 rounded-xl bg-gradient-to-br from-[#1a1c2e] to-[#0f1016] border border-white/5 relative overflow-hidden group">
+                                        <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                                            <TrendingUp size={40} />
+                                        </div>
+                                        <div className="flex items-center gap-3 mb-3">
+                                            <div className="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center text-orange-400">
+                                                <span className="font-bold text-xs">DM</span>
+                                            </div>
+                                            <div>
+                                                <p className="text-xs text-slate-400">Demat Account</p>
+                                                <p className="text-white font-bold">Zerodha</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center justify-between mt-4">
+                                            <div className="font-mono text-slate-300 text-sm">1208 **** **** 9932</div>
+                                            <button className="text-xs text-blue-400 hover:text-white transition-colors">View Details</button>
                                         </div>
                                     </div>
-                                    <p className="text-slate-400 text-center text-sm">
-                                        Your account is highly secure. <br />
-                                        Enable <span className="text-white">Anti-Phishing Code</span> to reach 100%.
-                                    </p>
-                                    <button onClick={() => setActiveTab('security')} className="mt-6 px-6 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-sm text-white transition-colors">
-                                        Improve Security
-                                    </button>
+
+                                    {/* Crypto Wallet */}
+                                    <div className="p-4 rounded-xl bg-gradient-to-br from-[#1a1c2e] to-[#0f1016] border border-white/5 relative overflow-hidden group">
+                                        <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                                            <Bitcoin size={40} />
+                                        </div>
+                                        <div className="flex items-center gap-3 mb-3">
+                                            <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-400">
+                                                <span className="font-bold text-xs">CW</span>
+                                            </div>
+                                            <div>
+                                                <p className="text-xs text-slate-400">Primary Wallet</p>
+                                                <p className="text-white font-bold">MetaMask</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center justify-between mt-4">
+                                            <div className="font-mono text-slate-300 text-sm truncate max-w-[120px]">0x71C...9A23</div>
+                                            <div className="flex gap-2">
+                                                <button className="p-1 hover:bg-white/10 rounded transition-colors text-slate-400 hover:text-white">
+                                                    <Copy size={12} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -207,60 +275,134 @@ export const ProfileModal = () => {
 
             case 'preferences':
                 return (
-                    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
-                        <h2 className="text-xl font-bold text-white mb-4">Preferences</h2>
-
-                        <div className="space-y-4">
-                            <div className="flex items-center justify-between p-4 bg-[#1a1c2e] rounded-xl border border-white/5">
-                                <div className="flex items-center gap-3">
-                                    <Languages className="text-slate-400" />
+                    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-300 pb-6">
+                        {/* Appearance Section */}
+                        <div>
+                            <h3 className="text-white font-bold mb-4 flex items-center gap-2">
+                                <Settings size={18} className="text-purple-400" /> Appearance & Behavior
+                            </h3>
+                            <div className="bg-[#1a1c2e] rounded-xl border border-white/5 divide-y divide-white/5">
+                                <div className="p-4 flex items-center justify-between">
                                     <div>
-                                        <p className="text-white font-medium">Language</p>
-                                        <p className="text-xs text-slate-500">English (US)</p>
+                                        <p className="text-white font-medium">Show Card Gradients</p>
+                                        <p className="text-xs text-slate-500">Enable colorful backgrounds for assets</p>
                                     </div>
+                                    <button
+                                        onClick={toggleGradients}
+                                        className={`w-10 h-6 rounded-full relative transition-colors ${showGradients ? 'bg-purple-500' : 'bg-slate-600'}`}
+                                    >
+                                        <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${showGradients ? 'left-[calc(100%-20px)]' : 'left-1'}`} />
+                                    </button>
                                 </div>
-                                <ChevronRight className="text-slate-500" />
-                            </div>
-
-                            <div className="flex items-center justify-between p-4 bg-[#1a1c2e] rounded-xl border border-white/5">
-                                <div className="flex items-center gap-3">
-                                    <CreditCard className="text-slate-400" />
+                                <div className="p-4 flex items-center justify-between">
                                     <div>
-                                        <p className="text-white font-medium">Currency</p>
-                                        <p className="text-xs text-slate-500">USD ($)</p>
+                                        <p className="text-white font-medium">UI Animations</p>
+                                        <p className="text-xs text-slate-500">Enable smooth transition effects</p>
                                     </div>
+                                    <button
+                                        onClick={toggleAnimations}
+                                        className={`w-10 h-6 rounded-full relative transition-colors ${enableAnimations ? 'bg-purple-500' : 'bg-slate-600'}`}
+                                    >
+                                        <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${enableAnimations ? 'left-[calc(100%-20px)]' : 'left-1'}`} />
+                                    </button>
                                 </div>
-                                <ChevronRight className="text-slate-500" />
-                            </div>
-
-                            <div className="flex items-center justify-between p-4 bg-[#1a1c2e] rounded-xl border border-white/5">
-                                <div className="flex items-center gap-3">
-                                    <Moon className="text-slate-400" />
+                                <div className="p-4 flex items-center justify-between">
                                     <div>
-                                        <p className="text-white font-medium">Theme</p>
-                                        <p className="text-xs text-slate-500">Dark Mode</p>
+                                        <p className="text-white font-medium">Cinematic Intro</p>
+                                        <p className="text-xs text-slate-500">Arcade-style loading sequence</p>
                                     </div>
-                                </div>
-                                <div className="w-10 h-6 bg-[#6a7bff] rounded-full relative cursor-pointer">
-                                    <div className="absolute right-1 top-1 w-4 h-4 bg-white rounded-full shadow-sm" />
+                                    <button
+                                        onClick={toggleCinematicIntro}
+                                        className={`w-10 h-6 rounded-full relative transition-colors ${showCinematicIntro ? 'bg-amber-500' : 'bg-slate-600'}`}
+                                    >
+                                        <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${showCinematicIntro ? 'left-[calc(100%-20px)]' : 'left-1'}`} />
+                                    </button>
                                 </div>
                             </div>
+                        </div>
 
-                            <div className="pt-4 border-t border-white/10">
-                                <h3 className="text-white font-bold mb-3">Notifications</h3>
-                                <div className="space-y-3">
-                                    {Object.entries(notifications).map(([key, val]) => (
-                                        <div key={key} className="flex items-center justify-between">
-                                            <span className="text-slate-300 capitalize">{key} Notifications</span>
-                                            <button
-                                                onClick={() => setNotifications(p => ({ ...p, [key]: !p[key as keyof typeof p] }))}
-                                                className={`w-10 h-6 rounded-full relative transition-colors ${val ? 'bg-green-500' : 'bg-slate-600'}`}
-                                            >
-                                                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${val ? 'left-[calc(100%-20px)]' : 'left-1'}`} />
-                                            </button>
+                        {/* Privacy Section */}
+                        <div>
+                            <h3 className="text-white font-bold mb-4 flex items-center gap-2">
+                                <EyeOff size={18} className="text-blue-400" /> Privacy
+                            </h3>
+                            <div className="bg-[#1a1c2e] rounded-xl border border-white/5 p-4 flex items-center justify-between">
+                                <div>
+                                    <p className="text-white font-medium">Hide Amounts</p>
+                                    <p className="text-xs text-slate-500">Blur sensitive financial data</p>
+                                </div>
+                                <button
+                                    onClick={() => setHideAmounts(!hideAmounts)} // Note: This state is local to modal currently, ideally should be global if it affects other pages
+                                    className={`w-10 h-6 rounded-full relative transition-colors ${hideAmounts ? 'bg-blue-500' : 'bg-slate-600'}`}
+                                >
+                                    <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${hideAmounts ? 'left-[calc(100%-20px)]' : 'left-1'}`} />
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Auto Sweep Section */}
+                        <div>
+                            <h3 className="text-white font-bold mb-4 flex items-center gap-2">
+                                <Activity size={18} className="text-emerald-400" /> Auto Sweep
+                            </h3>
+                            <p className="text-xs text-slate-500 mb-4">Automatically transfer excess funds to your investment wallet.</p>
+                            <div className="bg-[#1a1c2e] rounded-xl border border-white/5 divide-y divide-white/5 max-h-64 overflow-y-auto custom-scrollbar">
+                                {availableWallets.map(wallet => {
+                                    const settings = getSweepSettings(wallet)
+                                    const meta = cryptoMeta[wallet]
+                                    return (
+                                        <div key={wallet} className="p-4 space-y-3">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-3">
+                                                    <img src={meta?.icon} alt={meta?.name} className="w-8 h-8 rounded-full" />
+                                                    <div>
+                                                        <p className="text-white font-medium text-sm">{meta?.name}</p>
+                                                        <p className="text-xs text-slate-500">{wallet} Wallet</p>
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    onClick={() => setSweepSettings(wallet, { ...settings, enabled: !settings.enabled })}
+                                                    className={`w-10 h-6 rounded-full relative transition-colors ${settings.enabled ? 'bg-emerald-500' : 'bg-slate-600'}`}
+                                                >
+                                                    <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${settings.enabled ? 'left-[calc(100%-20px)]' : 'left-1'}`} />
+                                                </button>
+                                            </div>
+                                            {settings.enabled && (
+                                                <div className="flex items-center gap-3 animate-in fade-in slide-in-from-top-1">
+                                                    <span className="text-xs text-slate-400">Threshold:</span>
+                                                    <input
+                                                        type="number"
+                                                        value={settings.threshold}
+                                                        onChange={(e) => setSweepSettings(wallet, { ...settings, threshold: e.target.value })}
+                                                        placeholder="0.00"
+                                                        className="bg-[#13141b] border border-white/10 rounded-lg px-3 py-1 text-sm text-white w-24 focus:outline-none focus:border-emerald-500/50"
+                                                    />
+                                                    <span className="text-xs text-slate-500">{wallet}</span>
+                                                </div>
+                                            )}
                                         </div>
-                                    ))}
-                                </div>
+                                    )
+                                })}
+                            </div>
+                        </div>
+
+                        {/* Notifications (Existing) */}
+                        <div className="pt-4 border-t border-white/10">
+                            <h3 className="text-white font-bold mb-3 flex items-center gap-2">
+                                <Bell size={18} className="text-yellow-400" /> Notifications
+                            </h3>
+                            <div className="space-y-3">
+                                {Object.entries(notifications).map(([key, val]) => (
+                                    <div key={key} className="flex items-center justify-between">
+                                        <span className="text-slate-300 capitalize text-sm">{key} Alerts</span>
+                                        <button
+                                            onClick={() => setNotifications(p => ({ ...p, [key]: !p[key as keyof typeof p] }))}
+                                            className={`w-10 h-6 rounded-full relative transition-colors ${val ? 'bg-green-500' : 'bg-slate-600'}`}
+                                        >
+                                            <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${val ? 'left-[calc(100%-20px)]' : 'left-1'}`} />
+                                        </button>
+                                    </div>
+                                ))}
                             </div>
                         </div>
                     </div>
@@ -281,22 +423,6 @@ export const ProfileModal = () => {
                             </button>
                         </div>
 
-                        <div className="bg-[#1a1c2e] p-5 rounded-xl border border-white/5 mt-6">
-                            <h3 className="text-white font-bold mb-4">Referral Stats</h3>
-                            <div className="flex justify-between items-center bg-[#13141b] p-4 rounded-lg">
-                                <div>
-                                    <p className="text-xs text-slate-500 uppercase tracking-widest">Referral ID</p>
-                                    <div className="flex items-center gap-2 mt-1">
-                                        <span className="text-lg font-mono text-white tracking-widest">REF-8892</span>
-                                        <Copy size={16} className="text-slate-500 cursor-pointer hover:text-white" />
-                                    </div>
-                                </div>
-                                <div className="text-right">
-                                    <p className="text-2xl font-bold text-emerald-400">$1,250.00</p>
-                                    <p className="text-xs text-slate-500">Total Commissions</p>
-                                </div>
-                            </div>
-                        </div>
                     </div>
                 )
 
@@ -344,46 +470,57 @@ export const ProfileModal = () => {
         <Modal
             isOpen={isProfileOpen}
             onClose={toggleProfile}
-            className="h-[90vh] md:h-[85vh] flex overflow-hidden lg:rounded-2xl rounded-xl"
+            className="h-[85vh] md:h-[80vh] flex overflow-hidden lg:rounded-2xl rounded-xl border border-white/10 shadow-2xl"
             hideHeader
             noPadding
             maxWidth="w-[95vw] md:w-full max-w-5xl"
         >
-            <div className="flex flex-col md:flex-row h-full w-full">
+            <div className="flex flex-col md:flex-row h-full overflow-hidden bg-[#0f1016]">
                 {/* Sidebar */}
-                <div className="w-full md:w-64 bg-[#0f1016] border-b md:border-b-0 md:border-r border-white/5 flex flex-row md:flex-col shrink-0 overflow-x-auto md:overflow-visible no-scrollbar">
+                <div className="w-full md:w-64 bg-[#0f1016] border-b md:border-b-0 md:border-r border-white/5 flex flex-col shrink-0 z-20">
+
+                    {/* Brand / Header (Mobile Only) */}
+                    <div className="md:hidden p-4 border-b border-white/5 flex items-center justify-between bg-[#0f1016]">
+                        <h2 className="text-white font-bold font-metal tracking-wide">PROFILE</h2>
+                        <button
+                            onClick={toggleProfile}
+                            className="p-1 rounded-full text-slate-400 hover:text-white"
+                        >
+                            <X size={20} />
+                        </button>
+                    </div>
 
                     {/* Navigation */}
-                    <nav className="flex-1 p-2 md:p-4 flex md:flex-col gap-2 overflow-x-auto md:overflow-y-auto no-scrollbar items-center md:items-stretch">
+                    <nav className="flex-1 p-2 md:p-4 flex flex-row md:flex-col gap-2 overflow-x-auto md:overflow-y-auto no-scrollbar items-center md:items-stretch whitespace-nowrap md:whitespace-normal">
                         {tabs.map(tab => (
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
-                                className={`flex items-center gap-3 px-4 py-2 md:py-3 rounded-xl text-sm font-medium transition-all whitespace-nowrap ${activeTab === tab.id
+                                className={`flex items-center gap-3 px-4 py-2 md:py-3 rounded-xl text-sm font-medium transition-all ${activeTab === tab.id
                                     ? 'bg-[#6a7bff] text-white shadow-lg shadow-blue-500/25'
                                     : 'text-slate-400 hover:bg-white/5 hover:text-white'
                                     }`}
                             >
-                                <tab.icon size={18} />
-                                <span className="hidden md:inline">{tab.label}</span>
-                                <span className="md:hidden">{tab.label}</span>
+                                <tab.icon size={18} className="shrink-0" />
+                                <span>{tab.label}</span>
                             </button>
                         ))}
                     </nav>
 
-                    {/* Footer Actions */}
-                    <div className="hidden md:block p-4 border-t border-white/5">
+                    {/* Footer Actions (Sign Out) */}
+                    <div className="p-4 border-t border-white/5 bg-[#0f1016]">
                         <button
                             onClick={toggleProfile}
-                            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-white/10 text-slate-400 hover:text-white hover:bg-white/5 transition-colors text-sm font-medium"
+                            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-white/10 text-slate-400 hover:text-white hover:bg-white/5 transition-colors text-sm font-medium"
                         >
-                            <LogOut size={16} /> Sign Out
+                            <LogOut size={16} /> <span className="hidden md:inline">Sign Out</span><span className="md:hidden">Logout</span>
                         </button>
                     </div>
                 </div>
 
                 {/* Main Content Area */}
-                <div className="flex-1 bg-[#13141b] overflow-y-auto custom-scrollbar relative">
+                {/* Main Content Area */}
+                <div className="flex-1 bg-[#13141b] relative overflow-y-auto custom-scrollbar h-full">
                     {/* Decorative Background Glow */}
                     <div className="absolute top-0 left-0 w-full h-64 bg-gradient-to-b from-[#1a1c2e] to-transparent pointer-events-none" />
 

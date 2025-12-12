@@ -10,12 +10,48 @@ import { InvestmentNotification } from '../components/common/InvestmentNotificat
 import { motion, AnimatePresence } from 'framer-motion'
 import { containerStagger, fadeInUp, thanosReverse } from '../utils/animations'
 import { useUIStore } from '../state/uiStore'
-import { Wallet, Send, ArrowDown, Landmark } from 'lucide-react'
+import { Wallet, Send, ArrowDown, Landmark, Check, Settings, LogOut, ArrowRight, Zap, Lock as LockIcon } from 'lucide-react'
 import { Toast, ToastType } from '../components/common/Toast'
 
 
 
+// --- Spotlight Card (Premium UI) ---
+const SpotlightCard = ({ children, className = "", onClick }: any) => {
+  const divRef = useRef<HTMLDivElement>(null)
+  const [position, setPosition] = useState({ x: 0, y: 0 })
+  const [opacity, setOpacity] = useState(0)
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!divRef.current) return
+    const rect = divRef.current.getBoundingClientRect()
+    setPosition({ x: e.clientX - rect.left, y: e.clientY - rect.top })
+  }
+
+  return (
+    <div
+      ref={divRef}
+      onMouseMove={handleMouseMove}
+      onMouseEnter={() => setOpacity(1)}
+      onMouseLeave={() => setOpacity(0)}
+      onClick={onClick}
+      className={`relative overflow-hidden border border-white/5 bg-[#1f1f22] ${className}`}
+    >
+      {/* The Moving Glow */}
+      <div
+        className="pointer-events-none absolute -inset-px transition duration-300 z-0"
+        style={{
+          opacity,
+          background: `radial-gradient(600px circle at ${position.x}px ${position.y}px, rgba(255,255,255,0.06), transparent 40%)`,
+        }}
+      />
+      {/* Content sits above glow */}
+      <div className="relative z-10 h-full">{children}</div>
+    </div>
+  )
+}
+
 export default function Wallets() {
+  const { showGradients } = useUIStore()
   const [hideAmounts, setHideAmounts] = useState(false)
 
   type TabKey = 'balance' | 'send' | 'receive' | 'withdraw'
@@ -118,6 +154,27 @@ export default function Wallets() {
     return `${pad(d.getDate())} ${months[d.getMonth()]} ${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`
   }
   const genId = () => `TX-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`
+
+  const handleEditBank = (bank: any) => {
+    setEditingBankId(bank.id)
+    setNewBank({
+      name: bank.name,
+      number: '',
+      ifsc: '',
+      type: bank.type
+    })
+    setShowAddBank(true)
+  }
+
+  const handleDeleteBank = (bankId: string) => {
+    const newBanks = savedBanks.filter(b => b.id !== bankId)
+    setSavedBanks(newBanks)
+    if (selectedBank === bankId && newBanks.length > 0) {
+      setSelectedBank(newBanks[0].id)
+    } else if (newBanks.length === 0) {
+      setSelectedBank('')
+    }
+  }
 
   // Investment notification handlers
   const handleShowInvestmentNotification = (amount: number, sourceWallet: string) => {
@@ -375,6 +432,7 @@ export default function Wallets() {
               <span className={`hidden sm:inline ${activeTab === 'withdraw' ? 'font-bold' : ''}`}>Withdraw</span>
             </button>
           </motion.div>
+
 
           <AnimatePresence mode="wait">
             {activeTab === 'balance' && (
@@ -849,381 +907,350 @@ export default function Wallets() {
               </motion.div>
             )}
 
+            {/* ----------------- WITHDRAW TAB (REIMAGINED) ----------------- */}
+            {/* ----------------- WITHDRAW TAB (Mobile-First Redesign) ----------------- */}
             {activeTab === 'withdraw' && (
               <motion.div
                 key="withdraw"
-                className="wallet-send"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.3 }}
+                className="w-full max-w-[1200px] mx-auto relative pb-24 lg:pb-0" // Added padding-bottom for mobile nav
               >
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-5xl mx-auto items-start">
+                {/* Ambient Glares */}
+                {showGradients && (
+                  <div className="absolute inset-0 pointer-events-none z-0 overflow-visible">
+                    <div className="absolute -top-[20%] -left-[10%] w-[70%] h-[70%] bg-blue-600/20 rounded-full blur-[120px] opacity-50" />
+                    <div className="absolute -bottom-[20%] -right-[10%] w-[70%] h-[70%] bg-purple-600/20 rounded-full blur-[120px] opacity-50" />
+                  </div>
+                )}
 
-                  {/* Bank Selection */}
-                  <section className="wallet-card">
-                    <div className="wallet-card-header mb-4">
-                      <div className="wallet-token-badge bg-[#6a7bff]/10 text-[#6a7bff]">
-                        <span className="text-lg">🏦</span>
-                      </div>
-                      <span>Select Bank Account</span>
-                      <button
-                        onClick={() => setShowAddBank(true)}
-                        className="ml-auto text-xs text-[#6a7bff] font-medium hover:text-[#8ea6ff] transition-colors"
-                      >
-                        + Link New
-                      </button>
-                    </div>
+                {/* MAIN CONTENT GRID */}
+                {/* Mobile: Flex Column (Stack) | Desktop: Grid 12 Cols */}
+                <div className="relative z-10 flex flex-col lg:grid lg:grid-cols-12 gap-6 lg:gap-8 items-start">
 
-                    <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
-                      {savedBanks.map(bank => (
-                        <div
-                          key={bank.id}
-                          onClick={() => setSelectedBank(bank.id)}
-                          className={`relative min-w-[160px] p-4 rounded-xl border transition-all cursor-pointer flex flex-col gap-3 group
-                            ${selectedBank === bank.id
-                              ? 'bg-[#6a7bff]/10 border-[#6a7bff] shadow-lg shadow-blue-500/10'
-                              : 'bg-[#1b1f4a]/50 border-white/5 hover:bg-[#242655] hover:border-white/10'
-                            }`}
-                        >
-                          <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                setEditingBankId(bank.id)
-                                setNewBank({
-                                  name: bank.name,
-                                  number: '', // We don't store full number, so leave empty or maybe we should store it? 
-                                  // Actually let's just let them re-enter or leave it blank if we don't have it.
-                                  // For now, let's assume we can't recover the full number from mask. 
-                                  // But user wants to edit... let's just pre-fill name and type.
-                                  ifsc: '', // We didn't store IFSC in savedBanks before, need to fix that type or just leave empty
-                                  type: bank.type
-                                })
-                                setShowAddBank(true)
-                              }}
-                              className="p-1 rounded bg-[#0f1230] text-[#6a7bff] hover:bg-[#6a7bff] hover:text-white transition-colors"
-                              title="Edit"
-                            >
-                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                if (window.confirm('Are you sure you want to remove this bank account?')) {
-                                  const newBanks = savedBanks.filter(b => b.id !== bank.id)
-                                  setSavedBanks(newBanks)
-                                  if (selectedBank === bank.id && newBanks.length > 0) {
-                                    setSelectedBank(newBanks[0].id)
-                                  } else if (newBanks.length === 0) {
-                                    setSelectedBank('')
-                                  }
-                                }
-                              }}
-                              className="p-1 rounded bg-[#0f1230] text-red-500 hover:bg-red-500 hover:text-white transition-colors"
-                              title="Remove"
-                            >
-                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-                            </button>
-                          </div>
+                  {/* --- SECTION 1: DESTINATION (Top on Mobile / Left on Desktop) --- */}
+                  <div className="w-full lg:col-span-7 space-y-6">
 
-                          <div className="flex items-center justify-between">
-                            <span className="text-2xl">{bank.icon}</span>
-                            {selectedBank === bank.id && (
-                              <div className="w-4 h-4 rounded-full bg-[#6a7bff] flex items-center justify-center">
-                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-                              </div>
-                            )}
-                          </div>
-                          <div>
-                            <div className="font-semibold text-white text-sm truncate max-w-[120px]" title={bank.name}>{bank.name}</div>
-                            <div className="text-[#8b90b2] text-xs">{bank.type} •••• {bank.mask.slice(-4)}</div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Instant Transfer Options - Replaces Limits */}
-                    <div className="mt-6 pt-6 border-t border-white/5 space-y-4">
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm text-[#8b90b2]">Instant Transfer</span>
-                        <span className="text-xs text-[#6a7bff] font-medium">Processed Immediately</span>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3">
-                        <button className="flex flex-col items-center gap-2 p-3 rounded-xl bg-[#1b1f4a]/50 border border-white/5 hover:bg-[#242655] hover:border-white/10 transition-all group">
-                          <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center group-hover:scale-110 transition-transform">
-                            {/* UPI Logo */}
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                              <path d="M4 14L12 2L20 14H4Z" fill="#ff7f27" />
-                              <path d="M4 14L12 22L20 14H4Z" fill="#00baf2" />
-                            </svg>
-                          </div>
-                          <div>
-                            <div className="text-xs font-semibold text-white">UPI</div>
-                            <div className="text-[10px] text-[#8b90b2]">Instant Transfer</div>
-                          </div>
-                        </button>
-
-                        <button className="flex flex-col items-center gap-2 p-3 rounded-xl bg-[#1b1f4a]/50 border border-white/5 hover:bg-[#242655] hover:border-white/10 transition-all group">
-                          <div className="w-8 h-8 rounded-full bg-[#003087] flex items-center justify-center group-hover:scale-110 transition-transform">
-                            {/* PayPal Logo */}
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
-                              <path d="M20.067 8.478c.492.3.844.768 1.054 1.405 0 0 .524 1.572.678 2.043.19.581-.237 1.041-1.054 1.041h-2.148l-.513 3.193c-.007.037-.024.068-.057.086a.2.2 0 0 1-.098.024h-2.31c-.133 0-.226-.122-.19-.25l.892-5.589-1.996-8.913a.465.465 0 0 1 .46-.576h2.95c.789 0 1.503.491 1.764 1.258l.618 2.378c.073.284.341.488.647.488h1.254c.481 0 .973-.085 1.411-.336.19-.109.288-.336.213-.54-.083-.223-.298-.363-.538-.363h-.043zM7.106 20.916a.466.466 0 0 1-.46.576H3.696a.466.466 0 0 1-.46-.576l3.414-17.15a.465.465 0 0 1 .46-.576h3.407c1.789 0 3.328.796 4.306 2.057l-.37 1.86a.465.465 0 0 0 .46.576h.043c1.466 0 2.766.868 3.332 2.115.541 1.189.377 2.65-.445 3.868l-3.376 3.167a.465.465 0 0 1-.46.576h-2.95l-.513 3.193a.2.2 0 0 1-.19.164h-2.31a.2.2 0 0 1-.19-.25l.487-3.033z" />
-                            </svg>
-                          </div>
-                          <div>
-                            <div className="text-xs font-semibold text-white">PayPal</div>
-                            <div className="text-[10px] text-[#8b90b2]">Connect</div>
-                          </div>
-                        </button>
-                      </div>
-                    </div>
-                  </section>
-
-                  {/* Amount Input */}
-                  <section className="wallet-card h-full">
-                    <div className="wallet-card-header mb-2">
-                      <div className="wallet-token-badge bg-[#6a7bff]/10 text-[#6a7bff]">
-                        <span className="text-lg">💸</span>
-                      </div>
-                      <span>Withdrawal Amount</span>
-                      <div className="ml-auto flex gap-2">
-                        <button
-                          onClick={() => setWithdrawAmount((investmentBalance * 0.5).toFixed(2))}
-                          className="text-xs bg-[#242655] text-[#8b90b2] px-2 py-1 rounded hover:text-white"
-                        >
-                          50%
-                        </button>
-                        <button
-                          onClick={() => setWithdrawAmount(investmentBalance.toFixed(2))}
-                          className="text-xs bg-[#6a7bff]/20 text-[#6a7bff] px-2 py-1 rounded hover:bg-[#6a7bff] hover:text-white transition-colors"
-                        >
-                          MAX
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="relative mb-6">
-                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl text-[#8b90b2]">$</span>
-                      <input
-                        type="number"
-                        value={withdrawAmount}
-                        onChange={(e) => setWithdrawAmount(e.target.value)}
-                        placeholder="0.00"
-                        className="w-full bg-[#0f1230] border border-[#2a2c54] rounded-xl py-4 pl-10 pr-20 text-3xl font-bold text-white focus:outline-none focus:border-[#6a7bff] transition-colors placeholder-[#2a2c54]"
-                      />
-                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[#8b90b2] font-medium">USD</span>
-                    </div>
-
-                    {/* Fee Breakdown */}
-                    <div className="bg-[#0f1230]/50 rounded-lg p-4 space-y-2 mb-6 border border-white/5">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-[#8b90b2]">Available Balance</span>
-                        <span className="text-white font-medium">${investmentBalance.toLocaleString()}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-[#8b90b2]">Transaction Fee (1%)</span>
-                        <span className="text-[#ff6a6a]">-${((parseFloat(withdrawAmount) || 0) * 0.01).toFixed(2)}</span>
-                      </div>
-                      <div className="h-px bg-white/5 my-2" />
-                      <div className="flex justify-between text-base">
-                        <span className="text-[#e9ecff]">Total Received</span>
-                        <span className="text-[#6a7bff] font-bold">
-                          ${((parseFloat(withdrawAmount) || 0) * 0.99).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </span>
-                      </div>
-                    </div>
-
-                    <button
-                      disabled={isWithdrawing || !withdrawAmount || parseFloat(withdrawAmount) <= 0 || parseFloat(withdrawAmount) > investmentBalance}
-                      className={`w-full py-4 rounded-xl font-bold text-lg transition-all shadow-lg
-                        ${isWithdrawing || !withdrawAmount || parseFloat(withdrawAmount) <= 0 || parseFloat(withdrawAmount) > investmentBalance
-                          ? 'bg-[#242655] text-[#8b90b2] cursor-not-allowed'
-                          : 'bg-gradient-to-r from-[#6a7bff] to-[#67c8ff] text-white hover:scale-[1.02] shadow-blue-500/25'
-                        }`}
-                      onClick={() => {
-                        const amt = parseFloat(withdrawAmount)
-                        if (!amt || amt <= 0) return
-
-                        setIsWithdrawing(true)
-
-                        // Simulate network delay
-                        setTimeout(() => {
-                          const success = investmentWallet.subtract(amt, 'Withdrawal to Bank Account')
-                          setIsWithdrawing(false)
-
-                          if (success) {
-                            const bank = savedBanks.find(b => b.id === selectedBank)
-                            showToast(`Successfully withdrew $${amt.toFixed(2)} to ${bank?.name} (${bank?.mask})`, 'success')
-                            setWithdrawAmount('')
-
-                            transactionsStore.add({
-                              id: genId(),
-                              date: nowStr(),
-                              coin: 'USD',
-                              network: 'Bank Transfer',
-                              qty: amt,
-                              fee: amt * 0.01,
-                              gst: 0,
-                              deb: amt,
-                              recipient: bank?.name || 'Bank',
-                              recipientFull: `Transfer to ${bank?.name} ${bank?.mask}`,
-                              self: true,
-                              status: 'Completed',
-                              type: 'transfer'
-                            })
-                          } else {
-                            showToast('Transaction failed: Insufficient funds', 'error')
-                          }
-                        }, 1500)
-                      }}
-                    >
-                      {isWithdrawing ? (
-                        <span className="flex items-center justify-center gap-2">
-                          <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                          Processing...
-                        </span>
-                      ) : (
-                        'Confirm Withdrawal'
-                      )}
-                    </button>
-                  </section>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Add Bank Modal */}
-          <AnimatePresence>
-            {showAddBank && (
-              <motion.div
-                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
-              >
-                <div className="absolute inset-0" onClick={() => setShowAddBank(false)} />
-                <motion.div
-                  initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }}
-                  className="bg-[#1b1f4a] border border-[#2a2c54] rounded-2xl p-6 w-full max-w-md shadow-2xl relative z-10"
-                >
-                  <h3 className="text-xl font-bold text-white mb-6">Link New Bank Account</h3>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="text-xs font-medium text-[#8b90b2] mb-1.5 block">Bank Name</label>
-                      <input
-                        className="w-full bg-[#0f1230] border border-[#2a2c54] rounded-xl p-3 text-white focus:border-[#6a7bff] outline-none transition-colors"
-                        placeholder="e.g. Bank of America"
-                        value={newBank.name}
-                        onChange={e => setNewBank({ ...newBank, name: e.target.value })}
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs font-medium text-[#8b90b2] mb-1.5 block">Account Number</label>
-                      <input
-                        className="w-full bg-[#0f1230] border border-[#2a2c54] rounded-xl p-3 text-white focus:border-[#6a7bff] outline-none transition-colors"
-                        placeholder="XXXX-XXXX-XXXX"
-                        type="password"
-                        value={newBank.number}
-                        onChange={e => setNewBank({ ...newBank, number: e.target.value })}
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs font-medium text-[#8b90b2] mb-1.5 block">IFSC Code</label>
-                      <input
-                        className="w-full bg-[#0f1230] border border-[#2a2c54] rounded-xl p-3 text-white focus:border-[#6a7bff] outline-none transition-colors uppercase"
-                        placeholder="e.g. SBIN0001234"
-                        value={newBank.ifsc}
-                        onChange={e => setNewBank({ ...newBank, ifsc: e.target.value.toUpperCase() })}
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs font-medium text-[#8b90b2] mb-1.5 block">Account Type</label>
-                      <div className="flex gap-2">
-                        {['Checking', 'Savings'].map(type => (
-                          <button
-                            key={type}
-                            onClick={() => setNewBank({ ...newBank, type })}
-                            className={`flex-1 py-2 rounded-lg text-sm border transition-colors
-                                  ${newBank.type === type
-                                ? 'bg-[#6a7bff]/20 border-[#6a7bff] text-white'
-                                : 'bg-[#0f1230] border-transparent text-[#8b90b2] hover:bg-[#242655]'
-                              }`}
-                          >
-                            {type}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="flex gap-3 pt-4 border-t border-white/5 mt-6">
-                      <button
-                        onClick={() => setShowAddBank(false)}
-                        className="flex-1 py-3 bg-[#0f1230] text-[#8b90b2] rounded-xl hover:text-white font-medium transition-colors"
-                      >
-                        Cancel
-                      </button>
+                    {/* Mobile Header: "Where to?" */}
+                    <div className="lg:hidden flex items-center justify-between mb-2">
+                      <h2 className="text-2xl font-bold text-white">Withdraw</h2>
                       <button
                         onClick={() => {
-                          if (!newBank.name || !newBank.number || !newBank.ifsc) {
-                            alert('Please fill in all fields')
-                            return
-                          }
-
-                          if (editingBankId) {
-                            setSavedBanks(savedBanks.map(b =>
-                              b.id === editingBankId
-                                ? { ...b, name: newBank.name, mask: `****${newBank.number.slice(-4)}`, type: newBank.type }
-                                : b
-                            ))
-                          } else {
-                            setSavedBanks([...savedBanks, {
-                              id: `bank_${Date.now()}`,
-                              name: newBank.name,
-                              mask: `****${newBank.number.slice(-4)}`,
-                              type: newBank.type,
-                              icon: '🏦'
-                            }])
-                          }
-
                           setNewBank({ name: '', number: '', ifsc: '', type: 'Checking' })
-                          setEditingBankId(null)
-                          setShowAddBank(false)
+                          setShowAddBank(true)
                         }}
-                        className="flex-1 py-3 bg-[#6a7bff] text-white font-bold rounded-xl hover:bg-[#5b6ae0] transition-colors shadow-lg shadow-blue-500/20"
+                        className="text-xs font-bold text-blue-400 bg-blue-500/10 px-3 py-1.5 rounded-lg border border-blue-500/20"
                       >
-                        {editingBankId ? 'Save Changes' : 'Link Account'}
+                        + Add Account
                       </button>
                     </div>
+
+                    {/* Bank Selection Card */}
+                    <section className="bg-gradient-to-br from-[#1a1f3d] to-[#13141b] border border-[#6a7bff]/20 rounded-3xl p-5 md:p-8 relative overflow-hidden shadow-2xl">
+                      {/* Desktop Header */}
+                      <div className="hidden lg:flex justify-between items-center mb-8">
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#6a7bff] to-[#4f5eff] flex items-center justify-center text-white shadow-lg">
+                            <Landmark size={22} />
+                          </div>
+                          <div>
+                            <h3 className="text-xl font-bold text-white">Select Bank Account</h3>
+                            <p className="text-[#8b90b2] text-sm">Choose destination</p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => {
+                            setNewBank({ name: '', number: '', ifsc: '', type: 'Checking' })
+                            setShowAddBank(true)
+                          }}
+                          className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-[#6a7bff]/20 to-[#4f5eff]/20 hover:from-[#6a7bff] hover:to-[#4f5eff] border border-[#6a7bff]/50 transition-all"
+                        >
+                          + Link New
+                        </button>
+                      </div>
+
+                      {/* Cards Stack/Grid */}
+                      <div className="flex flex-col sm:grid sm:grid-cols-2 gap-3">
+                        {savedBanks.map((bank) => {
+                          const isSelected = selectedBank === bank.id
+                          return (
+                            <div
+                              key={bank.id}
+                              onClick={() => setSelectedBank(bank.id)}
+                              className={`
+                    relative p-4 rounded-2xl border cursor-pointer transition-all duration-300 group flex items-center gap-4
+                    ${isSelected
+                                  ? (showGradients
+                                    ? 'bg-gradient-to-r from-[#6a7bff]/20 to-[#1b1f4a] border-[#6a7bff] ring-1 ring-[#6a7bff]/50'
+                                    : 'bg-[#6a7bff]/10 border-[#6a7bff]'
+                                  )
+                                  : 'bg-[#1b1f4a]/40 border-white/5 hover:bg-[#242655]'
+                                }
+                  `}
+                            >
+                              <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl shadow-inner shrink-0 ${isSelected ? 'bg-[#0b0c10]' : 'bg-[#1f1f22]'}`}>
+                                {bank.icon}
+                              </div>
+
+                              <div className="flex-1 min-w-0">
+                                <div className="flex justify-between items-start">
+                                  <h4 className={`font-bold text-base truncate ${isSelected ? 'text-white' : 'text-slate-200'}`}>{bank.name}</h4>
+                                  {isSelected && <div className="text-blue-400 bg-blue-500/20 rounded-full p-1"><Check size={12} strokeWidth={3} /></div>}
+                                </div>
+                                <div className="flex items-center gap-2 mt-0.5">
+                                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#0f1230] text-[#8b90b2] border border-white/5 uppercase">{bank.type}</span>
+                                  <span className="text-xs text-slate-500 font-mono tracking-wider">•••• {bank.mask.slice(-4)}</span>
+                                </div>
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+
+                      {/* Instant Transfer (Mobile Optimized Row) */}
+                      <div className="mt-6 pt-6 border-t border-[#6a7bff]/20">
+                        <div className="flex justify-between items-center mb-4">
+                          <span className="text-sm font-medium text-[#8b90b2]">Instant Transfer</span>
+                          <span className="text-[10px] uppercase font-bold text-emerald-300 bg-emerald-500/20 px-2 py-0.5 rounded border border-emerald-500/30">Fast</span>
+                        </div>
+
+                        {/* Horizontal Scroll on Mobile for Methods */}
+                        <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar -mx-2 px-2 sm:grid sm:grid-cols-2 sm:overflow-visible sm:mx-0 sm:px-0">
+                          {[
+                            { id: 'upi', name: 'UPI', label: 'Instant', icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M4 14L12 2L20 14H4Z" fill="#ff7f27" /><path d="M4 14L12 22L20 14H4Z" fill="#00baf2" /></svg> },
+                            { id: 'paypal', name: 'PayPal', label: 'Connect', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M20.067 8.478c.492.3.844.768 1.054 1.405 0 0 .524 1.572.678 2.043.19.581-.237 1.041-1.054 1.041h-2.148l-.513 3.193c-.007.037-.024.068-.057.086a.2.2 0 0 1-.098.024h-2.31c-.133 0-.226-.122-.19-.25l.892-5.589-1.996-8.913a.465.465 0 0 1 .46-.576h2.95c.789 0 1.503.491 1.764 1.258l.618 2.378c.073.284.341.488.647.488h1.254c.481 0 .973-.085 1.411-.336.19-.109.288-.336.213-.54-.083-.223-.298-.363-.538-.363h-.043z" /></svg>, bg: 'bg-[#003087]' }
+                          ].map((method) => {
+                            const isSelected = selectedBank === method.id
+                            return (
+                              <button
+                                key={method.id}
+                                onClick={() => setSelectedBank(method.id)}
+                                className={`
+                          relative flex items-center gap-3 p-3 rounded-xl border transition-all min-w-[140px] sm:min-w-0 flex-1
+                          ${isSelected
+                                    ? (showGradients
+                                      ? 'bg-gradient-to-r from-indigo-600/30 to-[#1b1f4a] border-indigo-500 ring-1 ring-indigo-500/50'
+                                      : 'bg-indigo-600/20 border-indigo-500'
+                                    )
+                                    : 'bg-[#1b1f4a]/40 border-white/5 hover:bg-[#242655]'
+                                  }
+                        `}
+                              >
+                                <div className={`w-10 h-10 rounded-full flex items-center justify-center shadow-md ${method.bg || 'bg-white'} ${!method.bg && 'text-black'}`}>
+                                  {method.icon}
+                                </div>
+                                <div className="text-left">
+                                  <div className="text-sm font-bold text-white">{method.name}</div>
+                                  <div className="text-[10px] text-[#8b90b2]">{method.label}</div>
+                                </div>
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    </section>
                   </div>
-                </motion.div>
+
+                  {/* --- SECTION 2: AMOUNT (Bottom on Mobile / Right on Desktop) --- */}
+                  <div className="w-full lg:col-span-5 h-full">
+                    <section className="bg-gradient-to-br from-[#1a1f3d] to-[#13141b] border border-[#6a7bff]/20 rounded-3xl p-5 md:p-8 h-full flex flex-col relative overflow-hidden shadow-2xl">
+
+                      <div className="flex justify-between items-center mb-6 relative z-10">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xl">💸</span>
+                          <h3 className="text-lg font-bold text-white">Amount</h3>
+                        </div>
+                        <div className="flex gap-2">
+                          <button onClick={() => setWithdrawAmount((investmentBalance * 0.5).toFixed(2))} className="text-[10px] font-bold bg-[#242655] text-[#8b90b2] px-3 py-1.5 rounded-lg hover:text-white transition-colors border border-white/5">50%</button>
+                          <button onClick={() => setWithdrawAmount(investmentBalance.toFixed(2))} className="text-[10px] font-bold bg-[#6a7bff]/20 text-[#6a7bff] px-3 py-1.5 rounded-lg border border-blue-500/20">MAX</button>
+                        </div>
+                      </div>
+
+                      {/* Input Box - BIG for Mobile */}
+                      <div className="relative mb-6 relative z-10">
+                        <div className="relative bg-[#0f1230] border border-[#6a7bff]/30 rounded-2xl p-4 flex flex-col justify-center h-28 focus-within:border-[#6a7bff] transition-colors">
+                          <span className="text-[#8b90b2] text-xl font-light mb-1">$</span>
+                          <input
+                            type="number"
+                            value={withdrawAmount}
+                            onChange={(e) => setWithdrawAmount(e.target.value)}
+                            placeholder="0.00"
+                            className="w-full bg-transparent text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-[#6a7bff] outline-none placeholder-[#2a2c54] font-mono tracking-tight"
+                          />
+                          <div className="absolute right-4 top-4">
+                            <span className="text-[10px] font-bold text-white bg-[#1a1c2e] px-2 py-1 rounded border border-white/5">USD</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Breakdown List */}
+                      <div className="bg-[#0f1016]/50 rounded-xl p-4 space-y-3 mb-6 border border-[#6a7bff]/10 relative z-10">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-[#8b90b2]">Available</span>
+                          <span className="text-white font-mono">${investmentBalance.toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-[#8b90b2]">Fee (1%)</span>
+                          <span className="text-[#ff6a6a] font-mono">-${((parseFloat(withdrawAmount) || 0) * 0.01).toFixed(2)}</span>
+                        </div>
+                        <div className="h-px bg-gradient-to-r from-transparent via-[#6a7bff]/50 to-transparent my-1" />
+                        <div className="flex justify-between items-center pt-1">
+                          <span className="text-white font-bold">Receive</span>
+                          <span className="text-2xl font-black text-[#6a7bff] font-mono">
+                            ${((parseFloat(withdrawAmount) || 0) * 0.99).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Confirm Button - Full Width */}
+                      <button
+                        disabled={!withdrawAmount || parseFloat(withdrawAmount) <= 0 || isWithdrawing}
+                        onClick={() => {
+                          const amt = parseFloat(withdrawAmount)
+                          if (!amt) return
+                          setIsWithdrawing(true)
+                          setTimeout(() => {
+                            investmentWallet.subtract(amt, 'Withdrawal')
+                            setIsWithdrawing(false)
+                            setWithdrawAmount('')
+                            showToast(`Successfully withdrew $${amt.toFixed(2)}`, 'success')
+                          }, 1500)
+                        }}
+                        className={`
+                w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-all relative overflow-hidden group mt-auto z-10 shadow-lg
+                ${!withdrawAmount
+                            ? 'bg-[#1b1f4a] text-slate-500 cursor-not-allowed border border-white/5'
+                            : 'bg-gradient-to-r from-[#6a7bff] to-[#22d3ee] text-white hover:scale-[1.02] active:scale-[0.98]'
+                          }
+             `}
+                      >
+                        {isWithdrawing ? (
+                          <span className="animate-pulse">Processing...</span>
+                        ) : (
+                          <>Confirm <ArrowRight size={20} /></>
+                        )}
+                      </button>
+
+                    </section>
+                  </div>
+
+                </div>
               </motion.div>
             )}
+
+            <AnimatePresence>
+              {showAddBank && (
+                <motion.div
+                  initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                  className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+                >
+                  <div className="absolute inset-0" onClick={() => setShowAddBank(false)} />
+                  <motion.div
+                    initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }}
+                    className="bg-[#1b1f4a] border border-[#2a2c54] rounded-2xl p-6 w-full max-w-md shadow-2xl relative z-10"
+                  >
+                    <h3 className="text-xl font-bold text-white mb-6">Link New Bank Account</h3>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="text-xs font-medium text-[#8b90b2] mb-1.5 block">Bank Name</label>
+                        <input
+                          className="w-full bg-[#0f1230] border border-[#2a2c54] rounded-xl p-3 text-white focus:border-[#6a7bff] outline-none transition-colors"
+                          placeholder="e.g. Bank of America"
+                          value={newBank.name}
+                          onChange={e => setNewBank({ ...newBank, name: e.target.value })}
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-[#8b90b2] mb-1.5 block">Account Number</label>
+                        <input
+                          className="w-full bg-[#0f1230] border border-[#2a2c54] rounded-xl p-3 text-white focus:border-[#6a7bff] outline-none transition-colors"
+                          placeholder="XXXX-XXXX-XXXX"
+                          type="password"
+                          value={newBank.number}
+                          onChange={e => setNewBank({ ...newBank, number: e.target.value })}
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-[#8b90b2] mb-1.5 block">IFSC Code</label>
+                        <input
+                          className="w-full bg-[#0f1230] border border-[#2a2c54] rounded-xl p-3 text-white focus:border-[#6a7bff] outline-none transition-colors uppercase"
+                          placeholder="e.g. SBIN0001234"
+                          value={newBank.ifsc}
+                          onChange={e => setNewBank({ ...newBank, ifsc: e.target.value.toUpperCase() })}
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-[#8b90b2] mb-1.5 block">Account Type</label>
+                        <div className="flex gap-2">
+                          {['Checking', 'Savings'].map(type => (
+                            <button
+                              key={type}
+                              onClick={() => setNewBank({ ...newBank, type })}
+                              className={`flex-1 py-2 rounded-lg text-sm border transition-colors
+                                  ${newBank.type === type
+                                  ? 'bg-[#6a7bff]/20 border-[#6a7bff] text-white'
+                                  : 'bg-[#0f1230] border-transparent text-[#8b90b2] hover:bg-[#242655]'
+                                }`}
+                            >
+                              {type}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="flex gap-3 pt-4 border-t border-white/5 mt-6">
+                        <button
+                          onClick={() => setShowAddBank(false)}
+                          className="flex-1 py-3 bg-[#0f1230] text-[#8b90b2] rounded-xl hover:text-white font-medium transition-colors"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (!newBank.name || !newBank.number || !newBank.ifsc) {
+                              alert('Please fill in all fields')
+                              return
+                            }
+
+                            if (editingBankId) {
+                              setSavedBanks(savedBanks.map(b =>
+                                b.id === editingBankId
+                                  ? { ...b, name: newBank.name, mask: `****${newBank.number.slice(-4)}`, type: newBank.type }
+                                  : b
+                              ))
+                            } else {
+                              setSavedBanks([...savedBanks, {
+                                id: `bank_${Date.now()}`,
+                                name: newBank.name,
+                                mask: `****${newBank.number.slice(-4)}`,
+                                type: newBank.type,
+                                icon: '🏦'
+                              }])
+                            }
+
+                            setNewBank({ name: '', number: '', ifsc: '', type: 'Checking' })
+                            setEditingBankId(null)
+                            setShowAddBank(false)
+                          }}
+                          className="flex-1 py-3 bg-[#6a7bff] text-white font-bold rounded-xl hover:bg-[#5b6ae0] transition-colors shadow-lg shadow-blue-500/20"
+                        >
+                          {editingBankId ? 'Save Changes' : 'Link Account'}
+                        </button>
+                      </div>
+                    </div>
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+
+            {/* Modern Transaction History */}
+            <motion.div style={{ marginTop: '2rem' }} variants={fadeInUp}>
+              <TransactionsTable transactions={transactions} />
+            </motion.div>
           </AnimatePresence>
-
-          {/* Portfolio Link Section */}
-          {/* <div style={{ marginTop: '2rem', marginBottom: '2rem' }}>
-            <div className="wallet-card">
-              <div className="wallet-callout">
-                <div className="wallet-row" style={{ gap: 12 }}>
-                  <div className="wallet-token-badge" style={{ width: 40, height: 40, borderRadius: '50%' }}>
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                      <path d="M12 4v8l5 3" stroke="#bfe6ff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                      <circle cx="12" cy="12" r="9" stroke="#bfe6ff" strokeWidth="1.6" />
-                    </svg>
-                  </div>
-                  <div>
-                    <div style={{ fontWeight: 800 }}>View Coins Added in your Portfolio</div>
-                    <a className="wallet-link" href="/app/portfolio">VIEW PORTFOLIO</a>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div> */}
-
-          {/* Modern Transaction History */}
-          <motion.div style={{ marginTop: '2rem' }} variants={fadeInUp}>
-            <TransactionsTable transactions={transactions} />
-          </motion.div>
 
         </div>
       </motion.div>
@@ -1240,5 +1267,3 @@ export default function Wallets() {
     </>
   )
 }
-
-

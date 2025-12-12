@@ -97,9 +97,6 @@ export default function Layout({ children }: { children: ReactNode }) {
       </nav>
       <div className={`p-4 transition-all duration-300 border-t border-white/5 flex items-center ${collapsed ? 'flex-col gap-4 justify-center' : 'justify-between'}`}>
         <div className={`flex items-center ${collapsed ? 'flex-col gap-4' : 'gap-3'}`}>
-          <NavLink to="/app/settings" className="text-slate-400 hover:text-white transition-colors" title="Settings">
-            <SettingsIcon sx={{ fontSize: 20 }} />
-          </NavLink>
           <IconButton
             size="small"
             sx={{ color: 'rgb(148, 163, 184)', '&:hover': { color: 'white' }, p: 0 }}
