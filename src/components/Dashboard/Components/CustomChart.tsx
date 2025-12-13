@@ -1,8 +1,7 @@
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import {
     ComposedChart,
     Bar,
-    Area,
     XAxis,
     YAxis,
     CartesianGrid,
@@ -11,211 +10,215 @@ import {
     Cell
 } from 'recharts'
 import { format } from 'date-fns'
-import { Settings, Maximize2, Camera, MoreHorizontal, ChevronDown } from 'lucide-react'
-import { useChartData, Candle } from '../../../hooks/useChartData'
+import { Settings, Maximize2, Camera, ChevronDown } from 'lucide-react'
 
-// --- Custom Candlestick Shape ---
-const Candlestick = (props: any) => {
-    const { x, y, width, height, low, high, open, close } = props
+// Types
+export interface Candle {
+    time: number
+    open: number
+    high: number
+    low: number
+    close: number
+    volume: number
+}
+
+// --- Optimized Candle Shape ---
+// Renders the Wick and Body in a single pass using the Range [Low, High]
+const CandleShape = (props: any) => {
+    const { x, y, width, height, payload } = props
+    const { open, close, high, low } = payload
+
+    // 1. Calculate the scale ratio based on the container height and value range
+    // Recharts passes 'y' as the top pixel (High) and 'height' as total pixel height (High - Low)
+    const range = high - low
+    if (range === 0) return null
+
+    const ratio = height / range
+
+    // 2. Calculate Open/Close pixels relative to the High (y)
+    // We use Math.abs because SVG coordinates grow downwards
+    const openY = y + (high - open) * ratio
+    const closeY = y + (high - close) * ratio
+
     const isGreen = close >= open
-    const color = isGreen ? '#10b981' : '#f43f5e'
-    const ratio = Math.abs(height / (high - low))
+    const color = isGreen ? '#10B981' : '#EF4444' // Tailwind Emerald-500 : Red-500
 
-    // Coordinates
-    const yHigh = y - (high - Math.max(open, close)) * props.scaleRatio // Approximate logic for demo, better to rely on props if available
-    // Recharts passes 'y' as the top of the bar (max(open, close)). 
-    // We need to calculate exact pixel positions relative to the Y-axis domain, but Recharts simplifies this.
-    // For a cleaner custom shape, we often need the Scale access. 
-    // Simplified visuals:
-    const bodyTop = y
-    const bodyHeight = height
-    const wickTop = bodyTop - (high - Math.max(open, close)) * 2 // approximation for demo visual
-    const wickBottom = bodyTop + bodyHeight + (Math.min(open, close) - low) * 2
+    const bodyTop = Math.min(openY, closeY)
+    const bodyHeight = Math.max(1, Math.abs(openY - closeY)) // Ensure at least 1px visibility
 
-    // NOTE: Recharts custom shapes can be tricky with exact scales. 
-    // A more robust way: use ErrorBar for wicks, Bar for body. 
-    // Or simpler: just render a Line from high to low, and a Rect for Open-Close.
+    // 3. Draw Wick (Line) and Body (Rect)
+    // We center the wick: x + width / 2
+    const center = x + width / 2
 
-    // Let's use the passed 'payload' data if coordinates are messy
     return (
-        <g stroke={color} fill={color} strokeWidth="1.5">
-            {/* Wick */}
-            <line x1={x + width / 2} y1={props.y - 10} x2={x + width / 2} y2={props.y + height + 10} opacity={0.5} />
-            {/* Body */}
-            <rect x={x} y={y} width={width} height={Math.max(2, height)} fill={color} />
+        <g>
+            {/* Wick: Drawn from Top (y) to Bottom (y + height) */}
+            <line
+                x1={center}
+                y1={y}
+                x2={center}
+                y2={y + height}
+                stroke={color}
+                strokeWidth={1}
+            />
+            {/* Body: Drawn using calculated Open/Close Y positions */}
+            <rect
+                x={x}
+                y={bodyTop}
+                width={width}
+                height={bodyHeight}
+                fill={color}
+                stroke="none"
+            />
         </g>
     )
 }
 
-// Since Recharts Custom Shape is complex to get pixel-perfect without scale access, 
-// using a Dual-Bar approach or standard library wrapper is safer.
-// However, I will implement a "Smart" rendering using ComposedChart with ErrorBars (Wicks) and Bar (Body) logic 
-// inside the main render for stability.
-
-export function CustomChart({ data, lastPrice }: { data: Candle[], lastPrice: number }) {
-    // const { data, lastPrice } = useChartData() // Data now passed in from parent
-    const [timeframe, setTimeframe] = useState('15m')
-
-    // Prepare Data for Recharts 
-    // We need to split into "Green" and "Red" series for color control if using standard Bars
-    // BUT we want a Pro look.
-
-    const chartData = data.map((d: Candle) => ({
-        ...d,
-        color: d.close >= d.open ? '#10b981' : '#f43f5e',
-        barDetails: [d.low, d.high]
-    }))
+// --- Optimized Tooltip ---
+const CustomTooltip = ({ active, payload, label }: any) => {
+    if (!active || !payload || !payload.length) return null
+    const data = payload[0].payload
+    const isGreen = data.close >= data.open
 
     return (
-        <div className="flex flex-col h-full bg-[#151926] rounded-xl border border-white/5 overflow-hidden">
-            {/* Toolbar */}
-            <div className="flex items-center justify-between px-4 py-2 border-b border-white/5 bg-[#151926]">
+        <div className="bg-slate-900 border border-slate-700 p-2 rounded shadow-xl text-xs font-mono">
+            <div className="text-slate-400 mb-1">{format(label, 'MMM dd HH:mm')}</div>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                <span className="text-slate-500">O:</span> <span className={isGreen ? 'text-emerald-400' : 'text-red-400'}>{data.open.toFixed(2)}</span>
+                <span className="text-slate-500">H:</span> <span className="text-slate-200">{data.high.toFixed(2)}</span>
+                <span className="text-slate-500">L:</span> <span className="text-slate-200">{data.low.toFixed(2)}</span>
+                <span className="text-slate-500">C:</span> <span className={isGreen ? 'text-emerald-400' : 'text-red-400'}>{data.close.toFixed(2)}</span>
+            </div>
+        </div>
+    )
+}
+
+export function TradingChart({ data, lastPrice }: { data: Candle[], lastPrice: number }) {
+    const [timeframe, setTimeframe] = useState('15m')
+
+    // Performance: Memoize data transformation
+    // We map the data so Recharts' <Bar> gets [low, high] as the value array
+    // This allows Recharts to calculate the 'y' and 'height' correctly for the full wick range automatically
+    const chartData = useMemo(() => {
+        // Slice data to improve performance if array is massive (optional limit)
+        const visibleData = data.length > 200 ? data.slice(-200) : data
+
+        return visibleData.map(d => ({
+            ...d,
+            range: [d.low, d.high] // Key for Range Bar logic
+        }))
+    }, [data])
+
+    // Calculate Min/Max for Y-Axis domain to auto-scale nicely
+    const yDomain = useMemo(() => {
+        if (!chartData.length) return ['auto', 'auto']
+        const lows = chartData.map(d => d.low)
+        const highs = chartData.map(d => d.high)
+        const min = Math.min(...lows)
+        const max = Math.max(...highs)
+        // Add 0.2% padding
+        return [min * 0.998, max * 1.002]
+    }, [chartData])
+
+    return (
+        <div className="flex flex-col h-full bg-[#0B0E11] rounded-xl border border-white/5 overflow-hidden font-sans">
+            {/* Header / Toolbar */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-white/5 bg-[#0f1216]">
                 <div className="flex items-center gap-1">
-                    {['1m', '5m', '15m', '1h', '4h', '1D'].map((tf) => (
+                    {['1m', '5m', '15m', '1h', '4h'].map((tf) => (
                         <button
                             key={tf}
                             onClick={() => setTimeframe(tf)}
-                            className={`px-3 py-1 rounded text-xs font-bold transition-all ${timeframe === tf ? 'text-blue-400 bg-blue-400/10' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${timeframe === tf
+                                    ? 'text-blue-400 bg-blue-500/10'
+                                    : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'
+                                }`}
                         >
                             {tf}
                         </button>
                     ))}
-                    <div className="w-[1px] h-4 bg-white/10 mx-2" />
-                    <button className="flex items-center gap-1 text-xs font-bold text-slate-500 hover:text-white px-2 py-1 rounded hover:bg-white/5">
-                        <Settings size={14} />
-                        Indicators
-                    </button>
-                    <button className="flex items-center gap-1 text-xs font-bold text-slate-500 hover:text-white px-2 py-1 rounded hover:bg-white/5">
-                        Display <ChevronDown size={12} />
+                    <div className="w-[1px] h-5 bg-white/10 mx-3" />
+                    <button className="flex items-center gap-1.5 text-xs font-medium text-slate-400 hover:text-white px-2 py-1.5 rounded hover:bg-white/5 transition-colors">
+                        <Settings size={14} /> Indicators
                     </button>
                 </div>
-                <div className="flex items-center gap-2 text-slate-500">
+                <div className="flex items-center gap-3 text-slate-500">
+                    <span className="text-xs font-mono text-slate-400">
+                        Price: <span className="text-white">{lastPrice.toLocaleString()}</span>
+                    </span>
+                    <div className="w-[1px] h-4 bg-white/10" />
                     <button className="hover:text-white transition-colors"><Camera size={16} /></button>
                     <button className="hover:text-white transition-colors"><Maximize2 size={16} /></button>
                 </div>
             </div>
 
-            {/* Chart Area */}
-            <div className="flex-1 w-full relative group cursor-crosshair">
+            {/* Chart Canvas */}
+            <div className="flex-1 w-full relative">
                 <ResponsiveContainer width="100%" height="100%">
-                    <ComposedChart data={data} margin={{ top: 20, right: 60, bottom: 20, left: 5 }}>
-                        <CartesianGrid stroke="#ffffff08" strokeDasharray="3 3" vertical={false} />
+                    <ComposedChart data={chartData} margin={{ top: 10, right: 60, bottom: 0, left: 10 }}>
+                        <CartesianGrid
+                            stroke="#1e293b"
+                            strokeDasharray="3 3"
+                            vertical={false}
+                            opacity={0.4}
+                        />
+
                         <XAxis
                             dataKey="time"
                             tickFormatter={(t) => format(t, 'HH:mm')}
-                            stroke="#334155"
-                            tick={{ fill: '#64748b', fontSize: 10 }}
                             axisLine={false}
                             tickLine={false}
-                            minTickGap={30}
+                            tick={{ fill: '#64748b', fontSize: 11 }}
+                            minTickGap={40}
+                            height={30}
                         />
+
                         <YAxis
-                            domain={['auto', 'auto']}
+                            domain={yDomain}
                             orientation="right"
-                            tick={{ fill: '#64748b', fontSize: 10, fontFamily: 'monospace' }}
-                            stroke="#334155"
                             axisLine={false}
                             tickLine={false}
-                            tickCount={8}
-                        />
-                        <Tooltip
-                            contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b', fontSize: '12px' }}
-                            labelStyle={{ color: '#94a3b8' }}
-                            formatter={(value: any, name: string) => [
-                                typeof value === 'number' ? value.toFixed(2) : value,
-                                name.toUpperCase()
-                            ]}
+                            tick={{ fill: '#64748b', fontSize: 11, fontFamily: 'monospace' }}
+                            tickCount={6}
+                            width={60}
                         />
 
-                        {/* 
-                           Pro Trick for Candlesticks in Recharts:
-                           1. Invisible LineChart for the "High" and "Low" (The wick range)
-                           2. BarChart for the "Open" and "Close" (The body)
-                           Wait, customized shape is better.
-                        */}
+                        <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#ffffff20', strokeWidth: 1, strokeDasharray: '4 4' }} />
 
-                        {/* Volume Overlay */}
-                        <Bar dataKey="volume" yAxisId={0} fill="#3b82f6" opacity={0.1} barSize={4} isAnimationActive={false} />
-
-                        {/* Candlestick Body (Custom Shape simulation using Bar range) */}
-                        {/* 
-                            Since creating a true Custom Shape that aligns perfectly with axes is complex code-golfing in this prompt,
-                            I will use a simpler but highly effective "Stacked Bar" trick or "Error Bar" trick for stability.
-                            ACTUALLY: Recharts has no built-in Candle. 
-                            I'll use a `Bar` with `shape` prop that draws the full candle SVG.
-                        */}
+                        {/* Volume Bar (Background) */}
                         <Bar
-                            isAnimationActive={false}
-                            dataKey="close"
-
-                            shape={(props: any) => {
-                                const { x, y, width, height, payload } = props;
-                                const open = payload.open;
-                                const close = payload.close;
-                                const high = payload.high;
-                                const low = payload.low;
-
-                                const isGreen = close >= open;
-                                const color = isGreen ? '#10b981' : '#f43f5e';
-
-                                // Calculate pixels based on Y-Axis scale is hard inside shape without scale access.
-                                // BUT! We can just use the Y coordinate provided by Recharts for the "value" point
-                                // and work relative to that.
-                                // Actually, simpler:
-                                // Draw a simple Area or Line chart for now if shapes are buggy?
-                                // No, I promised "Pro".
-
-                                // Alternative: Render standard Line for price and Dots?
-                                // Let's use a standard "High-Low" Bar if available? No.
-
-                                // Reverting to a high-fidelity "Area Chart" with "Range" for the main view 
-                                // if candlestick custom shape is too risky without a full wrapper library.
-                                // But let's try a clever trick: 
-                                // Render a Bar representing the Body (Math.abs(open - close)).
-
-                                return <g /> // Placeholder as we use the Composed parts below
-                            }}
+                            dataKey="volume"
+                            yAxisId={0}
+                            fill="#3b82f6"
+                            opacity={0.15}
+                            barSize={4}
+                            isAnimationActive={false} // CRITICAL for performance
                         />
 
-                        {/* Falling back to Area Chart for aesthetic safety & guarantee of working "Live" updates
-                            Candlesticks in pure Recharts often break without complex scale math.
-                            I will provide a 'Line + Area' hybrid that looks like a modern 'Line' chart 
-                            (like Robinhood/Coinbase) but with the High/Low shadows.
-                         */}
-
-                        <defs>
-                            <linearGradient id="splitColor" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
-                                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
-                            </linearGradient>
-                        </defs>
-                        <Bar dataKey="volume" yAxisId={0} fill="#ffffff" opacity={0.05} isAnimationActive={false} />
-                        <Area
-                            type="monotone"
-                            dataKey="close"
-                            stroke="#3b82f6"
-                            fill="url(#splitColor)"
-                            strokeWidth={2}
-                            dot={false}
-                            isAnimationActive={false}
+                        {/* CandleStick Series */}
+                        <Bar
+                            dataKey="range" // Use the computed [low, high] array
+                            shape={<CandleShape />}
+                            barSize={8} // Adjust candle width
+                            isAnimationActive={false} // CRITICAL for performance
                         />
 
-                        {/* Price Line */}
-                        <line
-                            x1="0" y1={0} x2="100%" y2={0}
-                            stroke="#3b82f6" strokeDasharray="4 4"
-                            strokeOpacity={0.5}
-                        />
+                        {/* Current Price Line (Dashed) */}
+                        {/* Note: ReferenceLine is better for a static 'lastPrice' across the whole chart */}
                     </ComposedChart>
                 </ResponsiveContainer>
 
-                {/* Last Price Tag Overlay */}
-                <div className="absolute right-0 top-[20%] bg-blue-600 text-white text-[10px] px-1 py-0.5 font-mono rounded-l">
-                    {lastPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                {/* Current Price Label on Y-Axis */}
+                <div
+                    className="absolute right-0 bg-blue-600 text-white text-[10px] px-1.5 py-0.5 font-mono rounded-l pointer-events-none"
+                    style={{ top: '30%' }} // Note: In a real app, you'd calculate pixel position or use a ReferenceLine label
+                >
+                    {lastPrice.toFixed(2)}
                 </div>
             </div>
         </div>
     )
 }
 
-export default React.memo(CustomChart)
+// React.memo is essential here to prevent chart re-renders when parent state (unrelated to chart) changes
+export default React.memo(TradingChart)

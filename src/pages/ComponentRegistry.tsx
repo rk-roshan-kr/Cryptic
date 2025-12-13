@@ -13,7 +13,7 @@ import RiskBadge from '../components/Investment/RiskBadge'
 import InvestmentOptions from '../components/Investment/InvestmentOptions'
 
 // Trading
-import { CustomChart } from '../components/Dashboard/Components/CustomChart'
+import CustomChart from '../components/Dashboard/Components/CustomChart'
 import OrderBook from '../components/Dashboard/Components/OrderBook'
 import TradeForm from '../components/Dashboard/Components/TradeForm'
 import LeverageSlider from '../components/Dashboard/Components/LeverageSlider'
@@ -35,22 +35,7 @@ const MOCK_INV_OPTIONS = [
     { id: '3', name: 'Degen Farm', risk: 'High', apy: 24.5, icon: <span>🚀</span>, description: 'High risk LP farming.' }
 ]
 
-// Trading
-import { CustomChart } from '../components/Dashboard/Components/CustomChart'
-import OrderBook from '../components/Dashboard/Components/OrderBook'
-import TradeForm from '../components/Dashboard/Components/TradeForm'
-import LeverageSlider from '../components/Dashboard/Components/LeverageSlider'
-import ExchangeView from '../components/Dashboard/Views/ExchangeView'
-import FuturesView from '../components/Dashboard/Views/FuturesView'
 
-const MOCK_CANDLES = Array.from({ length: 50 }, (_, i) => ({
-    time: Date.now() - (50 - i) * 60000 * 15,
-    open: 64000 + Math.random() * 100,
-    high: 64200 + Math.random() * 100,
-    low: 63900 + Math.random() * 100,
-    close: 64100 + Math.random() * 100,
-    volume: Math.random() * 100
-}))
 
 // Placeholder for missing components or complex ones
 const Placeholder = ({ name }: { name: string }) => (
