@@ -105,7 +105,7 @@ body,
 
 @media (max-width:640px) {
   .wallet .wallet-container {
-    padding: 16px 10px 40px;
+    padding: 16px 4px 40px;
   }
 }
 
@@ -115,6 +115,7 @@ body,
   justify-content: space-between;
   margin-bottom: 18px;
 }
+
 
 .wallet .wallet-title {
   font-size: 28px;
@@ -1015,8 +1016,11 @@ body,
 
 @media (max-width:640px) {
   .wallet .wallet-action .wallet-action-label {
-    padding: 10px 14px;
-    font-size: 14px;
+    padding: 12px 10px;
+    /* Taller touch target, less side padding */
+    font-size: 15px;
+    /* Readable but fits better */
+    font-weight: 800;
   }
 }
 
@@ -1036,10 +1040,18 @@ body,
   display: none;
 }
 
+/* Expanded Action Body - Mobile Stack */
 .wallet .wallet-action.expanded .wallet-action-body {
   max-height: 120px;
   opacity: 1;
   pointer-events: auto;
+}
+
+@media (max-width: 640px) {
+  .wallet .wallet-action.expanded .wallet-action-body {
+    max-height: 200px;
+    /* Increased for stacked content */
+  }
 }
 
 .wallet .wallet-action,
@@ -1059,8 +1071,12 @@ body,
 
 @media (max-width:640px) {
   .wallet .wallet-action-body {
-    padding: 10px;
+    padding: 12px;
     gap: 10px;
+    flex-direction: column;
+    /* Stack vertically on mobile */
+    align-items: stretch;
+    /* Full width children */
   }
 }
 
@@ -1076,8 +1092,10 @@ body,
 
 @media (max-width:640px) {
   .wallet .wallet-action-input {
-    padding: 8px 10px;
-    font-size: 14px;
+    padding: 12px;
+    font-size: 16px;
+    /* Better for touch inputs */
+    width: 100%;
   }
 }
 
@@ -1098,8 +1116,19 @@ body,
 
 @media (max-width:640px) {
   .wallet .wallet-action-send {
-    padding: 8px 12px;
+    padding: 12px;
     font-size: 14px;
+    width: 100%;
+    /* Full width button */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  /* Remove the triangle tip on mobile since it's stacked */
+  .wallet .wallet-action-send.tip-right::after,
+  .wallet .wallet-action-send.tip-left::after {
+    display: none;
   }
 }
 
@@ -1445,14 +1474,95 @@ body,
 
 @media (max-width: 480px) {
   .investment-notification {
-    bottom: 16px;
-    right: 16px;
-    left: 16px;
-    width: auto;
+    bottom: auto;
+    top: 20px;
+    /* Increased for safety (status bar/notch) */
+    right: 12px;
+    left: 12px;
+    margin: 0 auto;
+    max-width: 400px;
+    z-index: 9999;
+    /* Ensure it's on top of everything */
+
+    transform: translateY(-150%);
+
+    /* Dynamic Island Styling */
+    border-radius: 40px;
+    /* Pill shape */
+    background: #000000;
+    /* Deep black */
+    color: white;
+
+    /* Subtle separation + Shimmer Border */
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.1);
+    backdrop-filter: none;
+
+    /* Animation settings */
+    transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    /* Bouncy spring */
+  }
+
+  .investment-notification.slide-in {
+    transform: translateY(0);
+    animation: gentle-pulse 3s infinite ease-in-out;
+  }
+
+  @keyframes gentle-pulse {
+
+    0%,
+    100% {
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.1);
+    }
+
+    50% {
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.3), 0 0 12px rgba(251, 188, 4, 0.15);
+    }
+  }
+
+  /* Shimmer effect for icon */
+  .notification-shimmer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(120deg, transparent 40%, rgba(255, 255, 255, 0.4) 50%, transparent 60%);
+    animation: shimmy 3s infinite linear;
+    transform: translateX(-100%);
+  }
+
+  @keyframes shimmy {
+    0% {
+      transform: translateX(-150%);
+    }
+
+    20% {
+      transform: translateX(150%);
+    }
+
+    100% {
+      transform: translateX(150%);
+    }
+  }
+
+  .notification-content {
+    padding: 10px 14px;
+    /* Slim padding for compact row */
+  }
+
+  .notification-header {
+    margin-bottom: 12px;
   }
 
   .notification-actions {
-    flex-direction: column;
+    flex-direction: row;
+    /* Keep side-by-side on mobile for compactness */
+    gap: 10px;
+  }
+
+  .notification-btn {
+    padding: 10px 12px;
+    font-size: 13px;
   }
 }
 

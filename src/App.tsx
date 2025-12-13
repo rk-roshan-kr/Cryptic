@@ -11,11 +11,14 @@ const Wallet = React.lazy(() => import('./pages/Wallet'))
 const WalletCombined = React.lazy(() => import('./pages/WalletCombined'))
 const Portfolio = React.lazy(() => import('./pages/Portfolio'))
 const CryptoTest = React.lazy(() => import('./pages/CryptoTest'))
+const TestPortfolio = React.lazy(() => import('./pages/TestPortfolio'))
 const Investment = React.lazy(() => import('./pages/Investment'))
 const InvestmentDetail = React.lazy(() => import('./pages/InvestmentDetail'))
 const InvestmentPortfolio = React.lazy(() => import('./pages/InvestmentPortfolio'))
 const MutualFundDetail = React.lazy(() => import('./pages/MutualFundDetail'))
 const Marketplace = React.lazy(() => import('./pages/Marketplace'))
+const SiteMap = React.lazy(() => import('./pages/SiteMap'))
+
 
 
 export default function App() {
@@ -162,6 +165,20 @@ export default function App() {
               </Layout>
             }
           />
+          <Route
+            path="/app/test-portfolio"
+            element={
+              <Layout>
+                <TestPortfolio />
+              </Layout>
+            }
+          />
+
+          <Route
+            path="/sitemap"
+            element={<SiteMap />}
+          />
+
 
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />

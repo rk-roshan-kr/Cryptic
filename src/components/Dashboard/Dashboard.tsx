@@ -1,347 +1,85 @@
-import { useEffect, useState } from 'react'
-import { Card, CardContent, Typography, Button, Chip, Avatar, Grid } from '@mui/material'
-import { TrendingUp, TrendingDown, ArrowUpward, Visibility, VisibilityOff } from '@mui/icons-material'
-import { cryptoStore, type CryptoSymbol } from '../../state/cryptoStore'
-import { cryptoMeta } from '../../state/cryptoMeta'
-import { prices } from '../../state/prices'
-import { transactionsStore, type Transaction } from '../../state/transactions'
-import { investmentWallet } from '../../state/investmentWallet'
+import React from 'react'
 import { motion } from 'framer-motion'
+import { Bell, Clock, BarChart2, TrendingUp, ClipboardList } from 'lucide-react'
+import CryptoDashboard from './CryptoDashboard'
+import { useDashboardStore } from '../../store/dashboardStore'
 
 export default function Dashboard() {
-  const [balances, setBalances] = useState(cryptoStore.getAll())
-  const [recentTransactions, setRecentTransactions] = useState<Transaction[]>([])
-  const [investmentBalance, setInvestmentBalance] = useState(investmentWallet.getBalance())
-  const [hideAmounts, setHideAmounts] = useState(false)
-  const [marketData, setMarketData] = useState(prices.getAll())
+  const { currentView, setView } = useDashboardStore()
 
-  // Subscribe to crypto balance updates
-  useEffect(() => {
-    setBalances(cryptoStore.getAll())
-
-    const unsubscribe = cryptoStore.subscribeToBalances((newBalances) => {
-      setBalances(newBalances)
-    })
-
-    return unsubscribe
-  }, [])
-
-  // Subscribe to transaction updates
-  useEffect(() => {
-    setRecentTransactions(transactionsStore.getRecent(5))
-
-    const unsubscribe = transactionsStore.subscribe((transactions) => {
-      setRecentTransactions(transactions.slice(0, 5))
-    })
-
-    return unsubscribe
-  }, [])
-
-  // Subscribe to investment wallet updates
-  useEffect(() => {
-    setInvestmentBalance(investmentWallet.getBalance())
-
-    const unsubscribe = investmentWallet.subscribe((balance) => {
-      setInvestmentBalance(balance)
-    })
-
-    return unsubscribe
-  }, [])
-
-  // Subscribe to price updates
-  useEffect(() => {
-    setMarketData(prices.getAll())
-    const unsubscribe = prices.subscribe(setMarketData)
-    return () => { unsubscribe() }
-  }, [])
-
-  const portfolio = [
-    { symbol: 'BTC', name: 'Bitcoin', qty: balances.BTC },
-    { symbol: 'ETH', name: 'Ethereum', qty: balances.ETH },
-    { symbol: 'USDT', name: 'Tether', qty: balances.USDT },
-    { symbol: 'SOL', name: 'Solana', qty: balances.SOL },
-    { symbol: 'BAT', name: 'Basic Attention Token', qty: balances.BAT },
-    { symbol: 'SEPOLIA_ETH', name: 'Sepolia ETH', qty: balances.SEPOLIA_ETH },
+  const TABS = [
+    { id: 'MARKET', label: 'Market', icon: BarChart2 },
+    { id: 'QUICK', label: 'QuickTrade', icon: Clock },
+    { id: 'EXCHANGE', label: 'Exchange', icon: TrendingUp },
+    { id: 'FUTURES', label: 'Futures', icon: TrendingUp },
   ] as const
 
-  const assets = portfolio.map(p => {
-    const data = marketData[p.symbol as CryptoSymbol] || { price: 0, change24h: 0 }
-    const usd = data.price
-    const valueUsd = Math.max(0, p.qty * usd)
-
-    return {
-      symbol: p.symbol,
-      name: cryptoMeta[p.symbol as CryptoSymbol]?.name || p.name,
-      logo: cryptoMeta[p.symbol as CryptoSymbol]?.icon || '',
-      qty: p.qty,
-      valueUsd,
-      change24hPercent: data.change24h,
-    }
-  })
-
-  const totalTreasuryValue = assets.reduce((acc, a) => acc + a.valueUsd, 0)
-  const activeWallets = Object.values(balances).filter(balance => balance > 0).length
-  const totalTransactions = transactionsStore.getAll().length
-  const lifetimeEarnings = 23.31
-
-  const formatAmount = (amount: number) => {
-    if (hideAmounts) return '****'
-    return amount.toLocaleString('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    })
-  }
-
-  const formatCrypto = (amount: number) => {
-    if (hideAmounts) return '****'
-    return amount.toFixed(4)
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      {/* Hero Section */}
-      <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-pink-600/20"></div>
-        <div className="relative px-6 py-12">
-          <div className="max-w-7xl mx-auto">
-            <div className="text-center mb-8">
-              <Typography variant="h2" className="text-white font-bold mb-4" style={{ textShadow: '0 0 20px rgba(59,130,246,0.5)' }}>
-                <span className="font-black tracking-widest text-[var(--accent)] font-metal">CRYPTIC</span>
-              </Typography>
-              <Typography variant="h6" className="text-slate-300 mb-6">
-                Manage your digital assets with precision and insight
-              </Typography>
-              <div className="flex items-center justify-center gap-4">
-                <Button
-                  variant="contained"
-                  size="large"
-                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold px-8 py-3 rounded-xl shadow-lg"
-                >
-                  Start Trading
-                </Button>
-                <Button
-                  variant="outlined"
-                  size="large"
-                  className="border-2 border-slate-400 text-slate-300 hover:border-white hover:text-white font-bold px-8 py-3 rounded-xl"
-                >
-                  Learn More
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+    <div style={{
+      height: '100vh',
+      background: 'radial-gradient(1200px 600px at 15% -10%, rgba(114,87,255,.10), transparent 60%), radial-gradient(1000px 500px at 85% -20%, rgba(93,199,255,.10), transparent 65%), #0a0a0a',
+      color: 'white',
+      fontFamily: 'sans-serif'
+    }} className="flex flex-col overflow-hidden selection:bg-blue-500/30">
 
-      {/* Key Metrics Section */}
-      <div className="px-6 py-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-between mb-6">
-            <Typography variant="h4" className="text-white font-bold">Portfolio Overview</Typography>
-            <Button
-              onClick={() => setHideAmounts(!hideAmounts)}
-              startIcon={hideAmounts ? <Visibility /> : <VisibilityOff />}
-              className="text-slate-300 hover:text-white"
+      {/* --- FIXED HEADER --- */}
+      <header className="flex-none z-50 border-b border-white/5 bg-[#0a0a0a]/80 backdrop-blur-xl px-4 md:px-6 py-3 flex items-center justify-between">
+
+        {/* Left: Navigation Tabs */}
+        <div className="flex items-center gap-1 bg-[#151926] p-1 rounded-xl border border-white/5 overflow-x-auto no-scrollbar">
+          {TABS.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setView(tab.id as any)}
+              className={`relative flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap
+                    ${currentView === tab.id
+                  ? 'text-white shadow-lg'
+                  : 'text-slate-500 hover:text-white hover:bg-white/5'}`}
             >
-              {hideAmounts ? 'Show' : 'Hide'} Amounts
-            </Button>
-          </div>
-
-          <Grid container spacing={3} className="mb-8">
-            <Grid item xs={12} sm={6} md={3}>
-              <Card className="bg-gradient-to-br from-blue-600/20 to-blue-800/20 border border-blue-500/30 backdrop-blur-sm">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <Typography className="text-blue-300 text-sm font-medium">Total Portfolio Value</Typography>
-                    <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center">
-                      <span className="text-blue-300 text-lg">$</span>
-                    </div>
-                  </div>
-                  <Typography variant="h4" className="text-white font-bold mb-2">
-                    {formatAmount(totalTreasuryValue)}
-                  </Typography>
-                  <div className="flex items-center gap-2">
-                    <TrendingUp className="text-green-400 text-sm" />
-                    <Typography className="text-green-400 text-sm font-medium">+2.45%</Typography>
-                    <Typography className="text-slate-400 text-sm">24h</Typography>
-                  </div>
-                </CardContent>
-              </Card>
-            </Grid>
-
-            <Grid item xs={12} sm={6} md={3}>
-              <Card className="bg-gradient-to-br from-purple-600/20 to-purple-800/20 border border-purple-500/30 backdrop-blur-sm">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <Typography className="text-purple-300 text-sm font-medium">Investment Balance</Typography>
-                    <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center">
-                      <span className="text-purple-300 text-lg">📈</span>
-                    </div>
-                  </div>
-                  <Typography variant="h4" className="text-white font-bold mb-2">
-                    {formatAmount(investmentBalance)}
-                  </Typography>
-                  <div className="flex items-center gap-2">
-                    <ArrowUpward className="text-green-400 text-sm" />
-                    <Typography className="text-green-400 text-sm font-medium">+5.67%</Typography>
-                    <Typography className="text-slate-400 text-sm">24h</Typography>
-                  </div>
-                </CardContent>
-              </Card>
-            </Grid>
-
-            <Grid item xs={12} sm={6} md={3}>
-              <Card className="bg-gradient-to-br from-green-600/20 to-green-800/20 border border-green-500/30 backdrop-blur-sm">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <Typography className="text-green-300 text-sm font-medium">Active Wallets</Typography>
-                    <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
-                      <span className="text-green-300 text-lg">💼</span>
-                    </div>
-                  </div>
-                  <Typography variant="h4" className="text-white font-bold mb-2">
-                    {activeWallets}
-                  </Typography>
-                  <Typography className="text-slate-400 text-sm">tracked</Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-
-            <Grid item xs={12} sm={6} md={3}>
-              <Card className="bg-gradient-to-br from-orange-600/20 to-orange-800/20 border border-orange-500/30 backdrop-blur-sm">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <Typography className="text-orange-300 text-sm font-medium">Lifetime Earnings</Typography>
-                    <div className="w-10 h-10 rounded-full bg-orange-500/20 flex items-center justify-center">
-                      <span className="text-orange-300 text-lg">💰</span>
-                    </div>
-                  </div>
-                  <Typography variant="h4" className="text-white font-bold mb-2">
-                    {formatAmount(lifetimeEarnings)}
-                  </Typography>
-                  <Typography className="text-slate-400 text-sm">from investments</Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-          </Grid>
-
-          {/* Market Overview */}
-          <div className="mb-8">
-            <Typography variant="h5" className="text-white font-bold mb-4">Market Overview</Typography>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {assets.filter(asset => asset.qty > 0).map(asset => (
-                <Card key={asset.symbol} className="bg-slate-800/50 border border-slate-700/50 hover:border-slate-600/50 transition-all duration-300">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-3">
-                        <div
-                          className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
-                          style={{ backgroundColor: cryptoMeta[asset.symbol as CryptoSymbol]?.color || '#60a5fa' }}
-                        >
-                          {asset.symbol.charAt(0)}
-                        </div>
-                        <div>
-                          <Typography className="text-white font-medium">{asset.name}</Typography>
-                          <Typography className="text-slate-400 text-sm">{asset.symbol}</Typography>
-                        </div>
-                      </div>
-                      <Chip
-                        label={`${asset.change24hPercent >= 0 ? '+' : ''}${asset.change24hPercent.toFixed(2)}%`}
-                        color={asset.change24hPercent >= 0 ? 'success' : 'error'}
-                        size="small"
-                        icon={asset.change24hPercent >= 0 ? <TrendingUp /> : <TrendingDown />}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <Typography className="text-slate-400 text-sm">Balance</Typography>
-                        <Typography className="text-white font-medium">{formatCrypto(asset.qty)}</Typography>
-                      </div>
-                      <div className="flex justify-between">
-                        <Typography className="text-slate-400 text-sm">Value</Typography>
-                        <Typography className="text-white font-medium">{formatAmount(asset.valueUsd)}</Typography>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-
-          {/* Recent Activity */}
-          <div className="mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <Typography variant="h5" className="text-white font-bold">Recent Activity</Typography>
-              <Chip label={`${totalTransactions} total transactions`} color="primary" />
-            </div>
-            <Card className="bg-slate-800/50 border border-slate-700/50">
-              <CardContent className="p-6">
-                <div className="space-y-4">
-                  {recentTransactions.length === 0 ? (
-                    <div className="text-center text-slate-400 py-8">
-                      <Typography variant="h6" className="mb-2">No transactions yet</Typography>
-                      <Typography className="text-sm">Start trading to see your activity here</Typography>
-                    </div>
-                  ) : (
-                    recentTransactions.map((tx) => (
-                      <div key={tx.id} className="flex items-center justify-between p-4 bg-slate-700/30 rounded-lg">
-                        <div className="flex items-center gap-4">
-                          <Avatar
-                            sx={{
-                              width: 40,
-                              height: 40,
-                              backgroundColor: cryptoMeta[tx.coin as CryptoSymbol]?.color || '#60a5fa'
-                            }}
-                          >
-                            {tx.coin.charAt(0)}
-                          </Avatar>
-                          <div>
-                            <Typography className="text-white font-medium capitalize">{tx.type} {tx.coin}</Typography>
-                            <Typography className="text-slate-400 text-sm">{tx.recipient}</Typography>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <Typography className="text-white font-medium">{tx.qty} {tx.coin}</Typography>
-                          <Typography className="text-slate-400 text-sm">{tx.network}</Typography>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Quick Actions */}
-          <div>
-            <Typography variant="h5" className="text-white font-bold mb-4">Quick Actions</Typography>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Button
-                variant="contained"
-                className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold py-4 rounded-xl"
-                size="large"
-              >
-                Transfer to Investment
-              </Button>
-              <Button
-                variant="contained"
-                className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-bold py-4 rounded-xl"
-                size="large"
-              >
-                Send Crypto
-              </Button>
-              <Button
-                variant="contained"
-                className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-bold py-4 rounded-xl"
-                size="large"
-              >
-                View Portfolio
-              </Button>
-            </div>
-          </div>
+              {currentView === tab.id && (
+                <motion.div
+                  layoutId="activeTabBg"
+                  className="absolute inset-0 bg-[#3b82f6] rounded-lg"
+                  initial={false}
+                  transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                />
+              )}
+              <span className="relative z-10 flex items-center gap-2">
+                <tab.icon size={14} />
+                {tab.label}
+              </span>
+            </button>
+          ))}
         </div>
+
+        {/* Right: Orders & Notifications */}
+        <div className="flex items-center gap-3 md:gap-4 ml-4">
+          <button className="relative p-2 rounded-full hover:bg-white/5 transition-colors group">
+            <Bell size={18} className="text-slate-400 group-hover:text-white transition-colors" />
+            <span className="absolute top-2 right-2 w-1.5 h-1.5 bg-rose-500 rounded-full animate-pulse" />
+          </button>
+
+          <div className="h-6 w-[1px] bg-white/10" />
+
+          {/* Orders Button */}
+          <button
+            onClick={() => setView('ORDERS')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all
+            ${currentView === 'ORDERS'
+                ? 'bg-[#3b82f6] border-[#3b82f6] text-white shadow-[0_0_15px_rgba(59,130,246,0.5)]'
+                : 'bg-white/5 border-white/5 text-slate-300 hover:border-white/20 hover:text-white'}`}
+          >
+            <ClipboardList size={16} />
+            <span className="text-xs font-bold uppercase tracking-wide">Orders</span>
+          </button>
+        </div>
+      </header>
+
+      {/* Main Content (Scrollable) */}
+      <div className="flex-1 overflow-hidden flex flex-col relative w-full">
+        <CryptoDashboard />
       </div>
+
     </div>
   )
 }

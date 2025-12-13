@@ -175,14 +175,14 @@ export default function MutualFundDetail() {
               ))}
             </ToggleButtonGroup>
           </Box>
-          
+
           {/* Placeholder for Chart */}
-          <Box sx={{ 
-            height: 300, 
-            bgcolor: 'grey.100', 
-            borderRadius: 2, 
-            display: 'flex', 
-            alignItems: 'center', 
+          <Box sx={{
+            height: 300,
+            bgcolor: 'grey.100',
+            borderRadius: 2,
+            display: 'flex',
+            alignItems: 'center',
             justifyContent: 'center',
             border: '2px dashed',
             borderColor: 'grey.300'
@@ -307,11 +307,11 @@ export default function MutualFundDetail() {
         </Grid>
 
         {/* 6. Investment CTA Section - Sticky Bottom */}
-        <Box sx={{ 
-          position: 'sticky', 
-          bottom: 0, 
-          bgcolor: 'background.paper', 
-          borderTop: 1, 
+        <Box sx={{
+          position: 'sticky',
+          bottom: 0,
+          bgcolor: 'background.paper',
+          borderTop: 1,
           borderColor: 'divider',
           p: 2,
           mt: 3
@@ -360,13 +360,13 @@ export default function MutualFundDetail() {
             Important Disclaimer
           </Typography>
           <Typography variant="body2" color="text.secondary" paragraph>
-            DeFi investments are subject to market risks, including but not limited to smart contract risks, 
-            protocol vulnerabilities, and extreme volatility. APY rates may fluctuate and are not guaranteed. 
-            Past performance is not indicative of future results. Please ensure you understand the risks 
+            DeFi investments are subject to market risks, including but not limited to smart contract risks,
+            protocol vulnerabilities, and extreme volatility. APY rates may fluctuate and are not guaranteed.
+            Past performance is not indicative of future results. Please ensure you understand the risks
             before investing.
           </Typography>
           <Typography variant="caption" color="text.secondary">
-            This platform is for educational purposes only. Always do your own research and consider 
+            This platform is for educational purposes only. Always do your own research and consider
             consulting with a financial advisor before making investment decisions.
           </Typography>
         </Box>

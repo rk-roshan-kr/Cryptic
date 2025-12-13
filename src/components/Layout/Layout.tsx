@@ -34,7 +34,8 @@ export default function Layout({ children }: { children: ReactNode }) {
     const isInvestmentRoute = location.pathname.includes('/app/investment') ||
       location.pathname.includes('/app/crypto-fund') ||
       location.pathname.includes('/app/portfolio') ||
-      location.pathname.includes('/app/wallets')
+      location.pathname.includes('/app/wallets') ||
+      location.pathname.includes('/app/overview') // Collapsing for Dashboard View
 
     if (isInvestmentRoute) {
       setCollapsed(true)
@@ -257,7 +258,7 @@ export default function Layout({ children }: { children: ReactNode }) {
         component="main"
         sx={{
           flexGrow: 1,
-          p: { xs: 2, md: 4 },
+          p: location.pathname.includes('/app/overview') ? 0 : { xs: 2, md: 4 },
           minWidth: 0,
           ml: { sm: isMobile ? 0 : `${currentDrawerWidth}px` },
           transition: 'margin-left 0.3s ease',

@@ -534,7 +534,10 @@ export default function Wallets() {
                       onClick={!showTransferWallet1 ? () => setShowTransferWallet1(true) : undefined}
                       style={{ marginTop: '16px' }}
                     >
-                      <div className="wallet-action-label center">TRANSFER TO INVESTMENT WALLET</div>
+                      <div className="wallet-action-label center">
+                        <span className="hidden sm:inline">TRANSFER TO INVESTMENT WALLET</span>
+                        <span className="sm:hidden">TRANSFER</span>
+                      </div>
                       <div className="wallet-action-body" onClick={(e) => e.stopPropagation()}>
                         <input className="wallet-action-input" placeholder={`Amount (${selectedWallet})`} inputMode="decimal" value={transferAmount} onChange={(e) => setTransferAmount(e.target.value)} />
                         <button className="wallet-action-send tip-right" onClick={(e) => {

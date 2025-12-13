@@ -16,7 +16,10 @@ import CryptoPortfolio from '../components/CryptoPortfolio/CryptoPortfolio'
 
 
 
-function PortfolioOriginal() {
+import { Link } from 'react-router-dom'
+import { Wallet, ArrowRight } from 'lucide-react'
+
+function PortfolioOriginal({ extraTile }: { extraTile?: React.ReactNode }) {
     const [recentTransactions, setRecentTransactions] = useState<Transaction[]>([])
     const [balances, setBalances] = useState(cryptoStore.getAll())
     const [expandedAsset, setExpandedAsset] = useState<string | null>(null)
@@ -165,26 +168,47 @@ function PortfolioOriginal() {
 
     return (
         <motion.div
-            className="space-y-6 text-coolgray dark:text-slate-300 h-[calc(100vh-48px)] overflow-y-auto snap-y snap-mandatory pb-8 no-scrollbar"
+            className="space-y-6 text-coolgray dark:text-slate-300 h-full overflow-y-auto snap-y snap-mandatory pb-8 no-scrollbar"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
         >
+            {/* --- HEADER --- */}
+            <motion.section
+                className="snap-start scroll-mt-4"
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6 }}
+            >
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 mb-2">
+                    <div>
+                        <h1 className="text-3xl md:text-4xl font-bold text-white mb-2 tracking-tight">Crypto Vault</h1>
+                        <p className="text-slate-400 font-medium">Real-time overview of your liquid assets and blockchain transactions.</p>
+                    </div>
+                    <Link
+                        to="/app/wallets"
+                        className="group flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-xl transition-all font-bold shadow-lg shadow-blue-900/20 active:scale-95"
+                    >
+                        <Wallet size={20} className="group-hover:-rotate-12 transition-transform" />
+                        Manage Wallets
+                    </Link>
+                </div>
+            </motion.section>
+
             <motion.section
                 className="snap-start scroll-mt-4"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.1 }}
             >
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className={`grid grid-cols-1 gap-4 ${extraTile ? 'md:grid-cols-2 lg:grid-cols-4' : 'md:grid-cols-3'}`}>
                     <Card className="card-base">
                         <CardContent>
                             <div className="flex items-center justify-between">
                                 <div>
                                     <Typography className="text-sm text-slate-300">Total Treasury Value</Typography>
                                     <Typography
-                                        variant="h4"
-                                        className="text-white font-bold mt-1"
+                                        className="text-2xl md:text-4xl text-white font-bold mt-1"
                                         style={{ textShadow: '0 0 12px rgba(250,204,21,0.25)' }}
                                     >
                                         {showCinematicIntro ? (
@@ -198,7 +222,7 @@ function PortfolioOriginal() {
                                         )}
                                     </Typography>
                                 </div>
-                                <Chip label={(totalChange >= 0 ? '+' : '') + totalChange.toFixed(2) + ' 24h'} color={totalChange >= 0 ? 'success' : 'error'} className="rounded-xl" />
+                                <Chip label={(totalChange >= 0 ? '+' : '') + totalChange.toFixed(2) + ' 24h'} color={totalChange >= 0 ? 'success' : 'error'} className="rounded-xl scale-90 md:scale-100 origin-right" size="small" />
                             </div>
                         </CardContent>
                     </Card>
@@ -206,7 +230,7 @@ function PortfolioOriginal() {
                         <CardContent>
                             <Typography className="text-sm text-slate-300">Active Wallets</Typography>
                             <div className="flex items-end gap-2 mt-1">
-                                <Typography variant="h4" className="text-white font-bold">{activeWallets}</Typography>
+                                <Typography className="text-3xl md:text-4xl text-white font-bold">{activeWallets}</Typography>
                                 <Typography className="text-xs text-slate-400">tracked</Typography>
                             </div>
                             <div className="flex -space-x-2 mt-3">
@@ -221,10 +245,11 @@ function PortfolioOriginal() {
                     <Card className="card-base">
                         <CardContent>
                             <Typography className="text-sm text-slate-300">Lifetime Earnings</Typography>
-                            <Typography variant="h4" className="text-white font-bold mt-1">$23.31</Typography>
+                            <Typography className="text-3xl md:text-4xl text-white font-bold mt-1">$23.31</Typography>
                             <Typography className="text-xs text-slate-400">from investments</Typography>
                         </CardContent>
                     </Card>
+                    {extraTile}
                 </div>
             </motion.section>
 
@@ -383,16 +408,17 @@ function PortfolioOriginal() {
                     </CardContent>
                 </Card>
             </motion.section>
-        </motion.div>
+
+        </motion.div >
     )
 }
 
-export default function Portfolio() {
+export default function Portfolio({ extraTile }: { extraTile?: React.ReactNode }) {
     const [view, setView] = useState<'v1' | 'v2' | 'v3'>('v1')
 
     return (
         <div className="relative h-full w-full">
-            {view === 'v1' && <PortfolioOriginal />}
+            {view === 'v1' && <PortfolioOriginal extraTile={extraTile} />}
             {view === 'v2' && <PortfolioCrypto />}
             {view === 'v3' && <CryptoPortfolio />}
 
