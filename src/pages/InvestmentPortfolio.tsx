@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { TrendingUp, PieChart, DollarSign, Activity, Plus, MoreHorizontal, ArrowUpRight, Calendar, Eye, EyeOff } from 'lucide-react'
 import { containerStagger, fadeInUp, speedometerWoosh } from '../utils/animations'
@@ -385,44 +386,53 @@ export default function InvestmentPortfolio({ extraTile }: { extraTile?: React.R
             )}
 
 
-            {/* --- MODAL (Fixed Overlay) --- */}
-            <AnimatePresence>
-                {selectedInvestment && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        // Z-index boosted to 200 to be above TestPortfolio's MobileHeader (z-100)
-                        className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
-                        onClick={() => setSelectedInvestment(null)}
-                    >
+            {/* --- MODAL (Fixed Overlay - Portalled to Body to escape Layout Transforms) --- */}
+            {createPortal(
+                <AnimatePresence>
+                    {selectedInvestment && (
                         <motion.div
-                            initial={{ scale: 0.95, y: 20 }}
-                            animate={{ scale: 1, y: 0 }}
-                            exit={{ scale: 0.95, y: 20 }}
-                            onClick={e => e.stopPropagation()}
-                            className="w-full max-w-5xl max-h-[85vh] overflow-y-auto no-scrollbar bg-[#0f1230] border border-white/10 rounded-3xl p-6 md:p-8 shadow-2xl relative"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            // Z-index boosted to 1300 to be above Sidebar (z-1100)
+                            className="fixed inset-0 z-[1300] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md"
+                            onClick={() => setSelectedInvestment(null)}
                         >
-                            <InvestmentReview
-                                selectedOption={selectedInvestment}
-                                amount={selectedInvestment.amount}
-                                isViewMode={true}
-                                onBack={() => setSelectedInvestment(null)}
-                                onConfirm={() => setSelectedInvestment(null)}
-                                onBuyMore={() => navigate('/app/invest', { state: { sourceWallet: 'Investment Wallet' } })}
-                                onSell={(amountToSell) => {
-                                    if (amountToSell && amountToSell < selectedInvestment.amount) {
-                                        updateInvestment(selectedInvestment.id, { amount: selectedInvestment.amount - amountToSell })
-                                    } else {
-                                        removeInvestment(selectedInvestment.id)
-                                    }
-                                    setSelectedInvestment(null)
-                                }}
-                            />
+                            <motion.div
+                                initial={{ scale: 0.95, y: 20 }}
+                                animate={{ scale: 1, y: 0 }}
+                                exit={{ scale: 0.95, y: 20 }}
+                                onClick={e => e.stopPropagation()}
+                                className="w-full max-w-5xl max-h-[85vh] overflow-y-auto no-scrollbar bg-[#0f1230] border border-white/10 rounded-3xl p-6 md:p-8 shadow-2xl relative"
+                            >
+                                <button
+                                    onClick={() => setSelectedInvestment(null)}
+                                    className="absolute top-6 right-6 p-2 rounded-full bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-colors z-50"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
+                                </button>
+                                <InvestmentReview
+                                    selectedOption={selectedInvestment}
+                                    amount={selectedInvestment.amount}
+                                    isViewMode={true}
+                                    onBack={() => setSelectedInvestment(null)}
+                                    onConfirm={() => setSelectedInvestment(null)}
+                                    onBuyMore={() => navigate('/app/invest', { state: { sourceWallet: 'Investment Wallet' } })}
+                                    onSell={(amountToSell) => {
+                                        if (amountToSell && amountToSell < selectedInvestment.amount) {
+                                            updateInvestment(selectedInvestment.id, { amount: selectedInvestment.amount - amountToSell })
+                                        } else {
+                                            removeInvestment(selectedInvestment.id)
+                                        }
+                                        setSelectedInvestment(null)
+                                    }}
+                                />
+                            </motion.div>
                         </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+                    )}
+                </AnimatePresence>,
+                document.body
+            )}
         </div >
     )
 }

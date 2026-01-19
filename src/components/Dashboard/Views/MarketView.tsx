@@ -4,16 +4,17 @@ import { Search, MoreVertical, Star } from 'lucide-react'
 import { LineChart, Line, ResponsiveContainer } from 'recharts'
 
 // Mock Data for Market List
+// Mock Data for Market List
 const MARKET_DATA = [
-    { id: 1, symbol: 'USDT', name: 'Tether', price: 91.1850, change: -0.31, chartData: [91.5, 91.4, 91.2, 91.1, 91.3, 91.18] },
-    { id: 2, symbol: 'XRP', name: 'Ripple', price: 185.5303, change: -0.63, chartData: [186, 187, 185, 184, 185, 185.5] },
-    { id: 3, symbol: 'ETH', name: 'Ethereum', price: 284541.09, change: -3.96, chartData: [290000, 288000, 285000, 282000, 284000, 284541] },
-    { id: 4, symbol: 'BTC', name: 'Bitcoin', price: 8174252.66, change: -2.35, chartData: [8300000, 8250000, 8200000, 8150000, 8160000, 8174252] },
-    { id: 5, symbol: 'SOL', name: 'Solana', price: 12095.63, change: -5.03, chartData: [12800, 12600, 12200, 12000, 12050, 12095] },
-    { id: 6, symbol: 'TRX', name: 'TRON', price: 24.9285, change: -1.37, chartData: [25.2, 25.1, 24.9, 24.8, 24.9, 24.92] },
-    { id: 7, symbol: 'BNB', name: 'Binance Coin', price: 81059.43, change: 0.88, chartData: [80000, 80500, 80800, 81200, 81100, 81059] },
-    { id: 8, symbol: 'DOGE', name: 'Dogecoin', price: 12.6452, change: -0.31, chartData: [12.8, 12.7, 12.6, 12.5, 12.6, 12.64] },
-    { id: 9, symbol: 'POL', name: 'Polygon', price: 11.0633, change: 1.14, chartData: [10.8, 10.9, 11.0, 11.1, 11.05, 11.06] },
+    { id: 1, symbol: 'USDT', name: 'Tether', price: 1.00, change: -0.31, chartData: [1.00, 1.00, 1.00, 1.00, 1.00, 1.00] },
+    { id: 2, symbol: 'XRP', name: 'Ripple', price: 2.23, change: -0.63, chartData: [2.24, 2.25, 2.22, 2.21, 2.23, 2.23] },
+    { id: 3, symbol: 'ETH', name: 'Ethereum', price: 3420.12, change: -3.96, chartData: [3500, 3480, 3450, 3400, 3410, 3420] },
+    { id: 4, symbol: 'BTC', name: 'Bitcoin', price: 98250.00, change: -2.35, chartData: [99000, 98500, 98000, 97500, 98000, 98250] },
+    { id: 5, symbol: 'SOL', name: 'Solana', price: 145.20, change: -5.03, chartData: [150, 148, 145, 142, 144, 145] },
+    { id: 6, symbol: 'TRX', name: 'TRON', price: 0.30, change: -1.37, chartData: [0.31, 0.30, 0.29, 0.30, 0.30, 0.30] },
+    { id: 7, symbol: 'BNB', name: 'Binance Coin', price: 975.43, change: 0.88, chartData: [960, 970, 975, 980, 978, 975] },
+    { id: 8, symbol: 'DOGE', name: 'Dogecoin', price: 0.15, change: -0.31, chartData: [0.16, 0.15, 0.15, 0.14, 0.15, 0.15] },
+    { id: 9, symbol: 'POL', name: 'Polygon', price: 0.13, change: 1.14, chartData: [0.12, 0.13, 0.13, 0.14, 0.13, 0.13] },
 ]
 
 import { useDashboardStore } from '../../../store/dashboardStore'
@@ -21,7 +22,7 @@ import { useDashboardStore } from '../../../store/dashboardStore'
 export default function MarketView() {
     const { setView, setPair } = useDashboardStore()
     const [searchTerm, setSearchTerm] = useState('')
-    const [activeTab, setActiveTab] = useState('INR')
+    const [activeTab, setActiveTab] = useState('USD')
 
     // Filter logic
     const filteredData = MARKET_DATA.filter(coin =>
@@ -54,7 +55,7 @@ export default function MarketView() {
 
                 {/* Currency Tabs */}
                 <div className="flex bg-[#151926] p-1 rounded-xl border border-white/5">
-                    {['INR', 'USDT'].map(tab => (
+                    {['USD', 'USDT'].map(tab => (
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}
@@ -90,7 +91,7 @@ export default function MarketView() {
                             <div>
                                 <div className="flex items-center gap-2">
                                     <span className="font-bold text-white text-base">{coin.symbol}</span>
-                                    <span className="text-xs text-slate-500 border border-white/10 px-1 rounded">INR</span>
+                                    <span className="text-xs text-slate-500 border border-white/10 px-1 rounded">{activeTab}</span>
                                 </div>
                                 <div className="text-xs text-slate-500">{coin.name}</div>
                             </div>

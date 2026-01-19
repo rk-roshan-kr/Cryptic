@@ -259,7 +259,7 @@ function PortfolioOriginal({ extraTile }: { extraTile?: React.ReactNode }) {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.2 }}
             >
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 min-w-0 h-auto lg:h-[500px]">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 min-w-0 h-auto">
                     {/* Chart & Legend Container - Expansive Version */}
                     {/* Chart & Legend Container - Expansive & Centered */}
                     <Card className="card-base min-w-0 h-auto">

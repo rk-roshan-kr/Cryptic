@@ -1,222 +1,442 @@
-import React from 'react'
-import { motion } from 'framer-motion'
-import { ChevronDown, Globe, Maximize2, Settings, Lock, Unlock } from 'lucide-react'
+import React, { useState, useEffect, useMemo } from 'react'
+import { Search, Bell, Calculator, ChevronDown, Check, Maximize2, Settings, Camera, FileText, Wallet, Info } from 'lucide-react'
+import CustomChart from '../Components/CustomChart'
 import OrderBook from '../Components/OrderBook'
 import TradeForm from '../Components/TradeForm'
-import LeverageSlider from '../Components/LeverageSlider'
-import CustomChart from '../Components/CustomChart'
-import { useChartData } from '../../../hooks/useChartData'
+import ChartSettingsModal from '../Components/ChartSettingsModal'
+import GlobalPreferencesDrawer from '../Components/GlobalPreferencesDrawer'
+import ChartIndicatorsModal from '../Components/ChartIndicatorsModal'
 import { useDashboardStore } from '../../../store/dashboardStore'
-import GridWrapper from '../Layout/GridWrapper'
+import { motion } from 'framer-motion'
+import TradingViewWidget from '../Components/TradingViewWidget'
+import CoinSelector from '../Components/CoinSelector' // Added import
 
-const FuturesHeader = ({ stats }: { stats: any }) => {
-    const { isLayoutLocked, toggleLayoutLock } = useDashboardStore()
+// --- 2. POSITIONS TABLE (Refined & Functional) ---
+const PositionsTable = () => {
+    const { orders, cancelOrder } = useDashboardStore()
+    const [activeTab, setActiveTab] = useState('OPEN ORDERS')
+
+    const filteredOrders = useMemo(() => {
+        if (activeTab === 'OPEN ORDERS') return orders.filter(o => o.status === 'OPEN')
+        if (activeTab === 'ORDER HISTORY') return orders.filter(o => o.status !== 'OPEN')
+        return []
+    }, [orders, activeTab])
+
+    const TABS = ['POSITIONS (0)', 'OPEN ORDERS', 'ORDER HISTORY', 'TRADE HISTORY', 'TRANSACTION HISTORY']
 
     return (
-        <div className="flex items-center justify-between p-4 border-b border-white/5 bg-[#0b0e14]">
-            {/* Pair Selector */}
-            <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2 cursor-pointer hover:bg-white/5 p-2 rounded-lg transition-colors group">
-                    <div className="flex -space-x-2">
-                        <div className="w-8 h-8 rounded-full bg-[#f7931a] flex items-center justify-center text-white font-bold text-[10px] ring-2 ring-[#0b0e14]">B</div>
-                        <div className="w-8 h-8 rounded-full bg-[#26a17b] flex items-center justify-center text-white font-bold text-[10px] ring-2 ring-[#0b0e14]">T</div>
+        <div className="flex flex-col h-full bg-[#0b0e14]">
+            {/* Tabs */}
+            <div className="flex items-center gap-2 md:gap-4 px-2 border-b border-white/5 bg-[#151926] overflow-x-auto no-scrollbar shrink-0">
+                {TABS.map((tab) => {
+                    const count = tab === 'OPEN ORDERS' ? `(${orders.filter(o => o.status === 'OPEN').length})` :
+                        tab === 'ORDER HISTORY' ? `(${orders.filter(o => o.status !== 'OPEN').length})` : ''
+                    const label = (tab === 'OPEN ORDERS' || tab === 'ORDER HISTORY') ? `${tab.split(' (')[0]} ${count}` : tab
+
+                    return (
+                        <button
+                            key={tab}
+                            onClick={() => setActiveTab(tab.split(' ')[0] + (tab.includes(' ') ? ' ' + tab.split(' ')[1] : ''))} // Simple mapping
+                            className={`h-7 text-[10px] font-bold uppercase tracking-wider border-b-2 transition-colors whitespace-nowrap px-2
+                            ${activeTab === tab.split(' (')[0] || (tab === 'OPEN ORDERS' && activeTab === 'OPEN ORDERS') || (tab === 'ORDER HISTORY' && activeTab === 'ORDER HISTORY')
+                                    ? 'text-blue-400 border-blue-500 bg-blue-500/5'
+                                    : 'text-slate-500 border-transparent hover:text-slate-300'}`}
+                        >
+                            {label}
+                        </button>
+                    )
+                })}
+            </div>
+
+            {/* Content Area */}
+            {activeTab === 'POSITIONS (0)' && (
+                <>
+                    {/* Helper Header - 10 Columns */}
+                    <div className="px-2 py-1 border-b border-white/5 grid grid-cols-10 gap-2 text-[9px] text-slate-500 font-bold uppercase tracking-wider bg-[#0b0e14] min-w-[1000px] overflow-x-auto shrink-0">
+                        <div className="col-span-1">Pair</div>
+                        <div className="col-span-1">Margin Type</div>
+                        <div className="col-span-1">Quantity</div>
+                        <div className="col-span-1">Size</div>
+                        <div className="col-span-1 flex items-center gap-1">Entry Price <Info size={8} /></div>
+                        <div className="col-span-1 flex items-center gap-1">Mark Price <Info size={8} /></div>
+                        <div className="col-span-1 flex items-center gap-1">Liq. Price <Info size={8} /></div>
+                        <div className="col-span-1">Unrealised P&L</div>
+                        <div className="col-span-1">Realised P&L</div>
+                        <div className="col-span-1 text-right">Margin Ratio</div>
                     </div>
-                    <div>
-                        <div className="flex items-center gap-2 font-bold text-lg text-white">
-                            BTC/USDT <span className="text-xs bg-[#26a17b] px-1.5 py-0.5 rounded text-white font-bold">PERP</span> <ChevronDown size={14} className="text-slate-500 group-hover:text-white" />
+
+                    {/* Empty State */}
+                    <div className="flex-1 flex flex-col items-center justify-center text-slate-600 gap-4 min-h-[150px] bg-[#0b0e14]">
+                        <div className="relative">
+                            <div className="w-16 h-16 rounded-full bg-gradient-to-b from-blue-500/10 to-transparent flex items-center justify-center">
+                                <Wallet size={32} className="opacity-40 text-blue-400" />
+                            </div>
                         </div>
-                        <div className="text-xs text-[#3b82f6] underline decoration-dashed decoration-slate-600">Bitcoin Price</div>
+                        <div className="text-center">
+                            <div className="text-sm font-bold text-slate-400">No positions to display</div>
+                            <div className="text-xs text-slate-600 mt-1">Placed position orders will be found in the list.</div>
+                        </div>
+                    </div>
+                </>
+            )}
+
+            {(activeTab === 'OPEN ORDERS' || activeTab === 'ORDER HISTORY') && (
+                <div className="flex-1 overflow-auto custom-scrollbar">
+                    {/* Orders Header */}
+                    <div className="px-2 py-1 border-b border-white/5 grid grid-cols-8 gap-4 text-[9px] text-slate-500 font-bold uppercase tracking-wider bg-[#0b0e14] min-w-[800px] sticky top-0 z-10">
+                        <div className="">Time</div>
+                        <div className="">Pair</div>
+                        <div className="">Type</div>
+                        <div className="">Side</div>
+                        <div className="">Price</div>
+                        <div className="">Amount</div>
+                        <div className="">Total</div>
+                        <div className="text-right">Action</div>
+                    </div>
+
+                    {filteredOrders.length === 0 ? (
+                        <div className="flex-1 flex flex-col items-center justify-center text-slate-600 gap-4 min-h-[150px] bg-[#0b0e14]">
+                            <FileText size={32} className="opacity-20" />
+                            <span className="text-xs font-bold opacity-50">No {activeTab.toLowerCase()} to display</span>
+                        </div>
+                    ) : (
+                        <div className="min-w-[800px]">
+                            {filteredOrders.map(order => (
+                                <div key={order.id} className="grid grid-cols-8 gap-4 px-2 py-1 border-b border-white/5 text-[10px] text-slate-300 hover:bg-white/5 transition-colors">
+                                    <div className="text-slate-500 font-mono">{new Date(order.timestamp).toLocaleTimeString()}</div>
+                                    <div className="font-bold text-white">{order.pair}</div>
+                                    <div className="text-slate-400">{order.type}</div>
+                                    <div className={order.side === 'BUY' ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold'}>{order.side}</div>
+                                    <div className="font-mono">{order.price.toLocaleString()}</div>
+                                    <div className="font-mono">{order.amount}</div>
+                                    <div className="text-slate-400 font-mono">{order.total.toLocaleString()}</div>
+                                    <div className="text-right">
+                                        {activeTab === 'OPEN ORDERS' ? (
+                                            <button
+                                                onClick={() => cancelOrder(order.id)}
+                                                className="text-rose-400 hover:text-rose-300 text-[9px] uppercase font-bold px-1.5 py-0.5 bg-rose-500/10 rounded hover:bg-rose-500/20 transition-colors"
+                                            >
+                                                Cancel
+                                            </button>
+                                        ) : (
+                                            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${order.status === 'FILLED' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-slate-700/50 text-slate-400'}`}>
+                                                {order.status}
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
+    )
+}
+
+
+// --- 1. HEADER (Previous MarketHeader) ---
+const FuturesHeader = ({ stats, onOpenPreferences }: { stats: any, onOpenPreferences: () => void }) => {
+    const { marginMode, setMarginMode, wallet, activePair } = useDashboardStore()
+    const [isWalletOpen, setIsWalletOpen] = useState(false)
+    const [isSelectorOpen, setIsSelectorOpen] = useState(false) // New state
+
+    // Safety check for stats
+    if (!stats) return null;
+
+    const handleMaximize = () => {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch((e) => {
+                console.error(`Error attempting to enable fullscreen mode: ${e.message} (${e.name})`);
+            });
+        } else {
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            }
+        }
+    }
+
+    return (
+        <div className="h-[40px] bg-[#0b0e14] border-b border-white/5 flex items-center px-2 justify-between shrink-0 z-30 relative">
+            {/* Left: Ticker & Main Price */}
+            <div className="flex items-center gap-4 relative">
+                <div
+                    onClick={() => setIsSelectorOpen(!isSelectorOpen)}
+                    className="flex items-center gap-2 cursor-pointer hover:bg-white/5 p-1 rounded-lg transition-colors group border border-transparent hover:border-white/5 relative"
+                >
+                    <div className="w-6 h-6 rounded-full bg-[#F7931A] flex items-center justify-center text-white text-[9px] font-bold shadow-sm shadow-orange-500/20">
+                        {activePair.split('/')[0][0]}
+                    </div>
+                    <div className="flex flex-col leading-none gap-0.5">
+                        <span className="text-xs font-bold text-white group-hover:text-blue-400 transition-colors">
+                            {activePair} <ChevronDown size={10} className={`inline transition-transform ${isSelectorOpen ? 'rotate-180' : ''}`} />
+                        </span>
+                        <span className="text-[9px] text-slate-500 font-medium">Perpetual</span>
                     </div>
                 </div>
 
-                {/* Funding Rate Stats */}
-                <div className="hidden md:flex items-center gap-8 px-4 border-l border-white/5">
-                    <div>
-                        <div className="text-[10px] text-slate-500 font-bold uppercase">Mark Price</div>
-                        <div className={`headers-price font-mono font-medium text-emerald-400`}>
-                            {stats?.price?.toLocaleString(undefined, { minimumFractionDigits: 2 }) || '---'}
-                        </div>
-                    </div>
-                    <div>
-                        <div className="text-[10px] text-slate-500 font-bold uppercase">Index Price</div>
-                        <div className="font-mono text-slate-300 font-medium">64,235.10</div>
-                    </div>
-                    <div>
-                        <div className="text-[10px] text-slate-500 font-bold uppercase">Funding / Countdown</div>
-                        <div className="font-mono text-orange-400 font-medium">0.0100% <span className="text-slate-500">04:23:12</span></div>
-                    </div>
-                    <div>
-                        <div className="text-[10px] text-slate-500 font-bold uppercase">24h Volume</div>
-                        <div className="font-mono text-slate-300 font-medium">
-                            {stats?.volume ? (stats.volume / 1000).toFixed(1) + 'K' : '---'}
-                        </div>
-                    </div>
+                <CoinSelector isOpen={isSelectorOpen} onClose={() => setIsSelectorOpen(false)} />
+
+                <div className={`text-sm font-mono font-bold tracking-tight ${stats?.change24h >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                    {stats?.price?.toLocaleString(undefined, { minimumFractionDigits: 1 })}
                 </div>
             </div>
 
-            {/* Tools */}
-            <div className="flex items-center gap-2">
-                {/* Layout Toggle - Moved here */}
-                <button
-                    onClick={toggleLayoutLock}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border
-                ${isLayoutLocked
-                            ? 'bg-[#151926] text-slate-400 border-white/5 hover:text-white'
-                            : 'bg-orange-500/20 text-orange-400 border-orange-500/50'}`}
-                >
-                    {isLayoutLocked ? <Lock size={14} /> : <Unlock size={14} />}
-                    {isLayoutLocked ? 'Locked' : 'Edit'}
-                </button>
+            {/* Center: Market Stats Ribbon */}
+            <div className="hidden 2xl:flex items-center gap-4">
+                <div className="flex flex-col items-end">
+                    <span className="text-[9px] text-slate-500 font-medium border-b border-dashed border-slate-700 cursor-help">Mark</span>
+                    <span className="text-[10px] text-slate-300 font-mono tracking-wide">{stats?.price?.toLocaleString()}</span>
+                </div>
+                <div className="flex flex-col items-end">
+                    <span className="text-[9px] text-slate-500 font-medium border-b border-dashed border-slate-700 cursor-help">Index</span>
+                    <span className="text-[10px] text-slate-300 font-mono tracking-wide">{(stats?.price + 12.5).toLocaleString()}</span>
+                </div>
+                <div className="flex flex-col items-end">
+                    <span className="text-[9px] text-slate-500 font-medium border-b border-dashed border-slate-700 cursor-help">Funding / Countdown</span>
+                    <span className="text-[10px] text-[#EAB308] font-mono tracking-wide font-bold">0.0100% <span className="text-slate-500 font-normal">/</span> 05:42:18</span>
+                </div>
+                <div className="flex flex-col items-end">
+                    <span className="text-[9px] text-slate-500 font-medium border-b border-dashed border-slate-700 cursor-help">24h Change</span>
+                    <span className={`text-[10px] font-mono tracking-wide ${stats?.change24h >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                        {stats?.change24h > 0 ? '+' : ''}{stats?.change24h}%
+                    </span>
+                </div>
+                <div className="flex flex-col items-end opacity-60 hover:opacity-100 transition-opacity">
+                    <span className="text-[9px] text-slate-500 font-medium border-b border-dashed border-slate-700 cursor-help">24h Vol (USDT)</span>
+                    <span className="text-[10px] text-slate-300 font-mono tracking-wide">493.5M</span>
+                </div>
+            </div>
 
-                <button className="flex items-center gap-2 bg-[#151926] hover:bg-white/10 px-3 py-1.5 rounded-lg border border-white/5 text-xs font-bold text-slate-300 transition-colors">
-                    <Settings size={14} />
-                    Cross
+            {/* Right: Wallet & Settings & Mode */}
+            <div className="flex items-center gap-3">
+                {/* Margin Mode Toggle */}
+                <div className="flex items-center bg-[#151926] p-0.5 rounded border border-white/5">
+                    <button
+                        onClick={() => setMarginMode('CROSS')}
+                        className={`px-3 py-1 text-[10px] font-bold rounded transition-colors ${marginMode === 'CROSS' ? 'bg-[#0b0c10] text-blue-400 shadow-sm border border-white/5' : 'text-slate-500 hover:text-slate-300'}`}
+                    >
+                        Cross
+                    </button>
+                    <button
+                        onClick={() => setMarginMode('ISOLATED')}
+                        className={`px-3 py-1 text-[10px] font-bold rounded transition-colors ${marginMode === 'ISOLATED' ? 'bg-[#0b0c10] text-blue-400 shadow-sm border border-white/5' : 'text-slate-500 hover:text-slate-300'}`}
+                    >
+                        Isolated
+                    </button>
+                </div>
+
+                {/* Wallet Dropdown */}
+                <div className="relative">
+                    <div
+                        onClick={() => setIsWalletOpen(!isWalletOpen)}
+                        className="flex items-center gap-3 px-3 py-1 bg-[#151926] rounded border border-white/5 cursor-pointer hover:border-slate-600 transition-all group"
+                    >
+                        <Wallet size={14} className="text-blue-500" />
+                        <div className="flex flex-col items-end leading-tight">
+                            <span className="text-[9px] text-blue-400 font-bold uppercase tracking-wider flex items-center gap-1">Futures (USDT) <ChevronDown size={8} /></span>
+                            <span className="text-[11px] text-white font-mono font-bold">{(wallet?.usdt?.available ?? 0).toFixed(2)} <span className="text-slate-500 text-[9px] font-sans">USDT</span></span>
+                        </div>
+                    </div>
+                    {isWalletOpen && (
+                        <div className="absolute top-full right-0 mt-2 w-48 bg-[#151926] border border-white/10 rounded-lg shadow-xl p-3 z-50">
+                            <div className="text-[10px] text-slate-500 font-bold uppercase mb-2">Total Balance</div>
+                            <div className="text-lg text-white font-mono font-bold">${(wallet?.usd?.total || 0).toLocaleString()}</div>
+                            <div className="h-px bg-white/5 my-2" />
+                            <div className="text-[10px] text-slate-500 font-bold uppercase mb-1">USDT Balance</div>
+                            <div className="text-sm text-emerald-400 font-mono font-bold">{(wallet?.usdt?.total || 0).toLocaleString()} USDT</div>
+                        </div>
+                    )}
+                </div>
+
+                <button
+                    onClick={onOpenPreferences}
+                    className="p-2 hover:bg-white/5 rounded text-slate-400 hover:text-white transition-colors"
+                >
+                    <Settings size={18} />
                 </button>
-                <button className="flex items-center gap-2 bg-[#151926] hover:bg-white/10 px-3 py-1.5 rounded-lg border border-white/5 text-xs font-bold text-emerald-400 transition-colors">
-                    20x
+                <button
+                    onClick={handleMaximize}
+                    className="p-2 hover:bg-white/5 rounded text-slate-400 hover:text-white transition-colors"
+                >
+                    <Maximize2 size={18} />
                 </button>
             </div>
         </div>
     )
 }
 
-const ChartArea = () => (
-    <div className="flex-1 bg-[#151926] m-1 rounded-xl border border-white/5 flex flex-col items-center justify-center relative overflow-hidden group">
-        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 pointer-events-none" />
-        <div className="text-slate-600 font-bold text-lg">TradingView Chart (Perpetual)</div>
-        <div className="text-slate-700 text-xs mt-2">Connecting to Feed...</div>
-    </div>
-)
-
-// Mock Positions Data
-const POSITIONS = [
-    { symbol: 'BTC/USDT', type: 'LONG', size: '0.125', entry: 62500.00, mark: 64230.50, liq: 58200.00, pnl: 216.31, pnlPercent: 12.5 },
-    { symbol: 'ETH/USDT', type: 'SHORT', size: '1.50', entry: 3500.00, mark: 3450.12, liq: 3800.00, pnl: 74.82, pnlPercent: 5.2 },
-]
-
-const PositionsTable = () => (
-    <div className="h-[250px] bg-[#151926] m-1 rounded-xl border border-white/5 overflow-hidden flex flex-col">
-        <div className="flex items-center gap-6 px-4 py-3 border-b border-white/5">
-            <button className="text-xs font-bold text-white border-b-2 border-[#3b82f6] pb-3 -mb-3.5">Positions (2)</button>
-            <button className="text-xs font-bold text-slate-500 hover:text-white transition-colors">Open Orders (0)</button>
-            <button className="text-xs font-bold text-slate-500 hover:text-white transition-colors">Order History</button>
-        </div>
-
-        <div className="flex-1 overflow-auto">
-            <table className="w-full text-left border-collapse">
-                <thead className="text-[10px] text-slate-500 font-bold uppercase sticky top-0 bg-[#151926] z-10">
-                    <tr>
-                        <th className="px-4 py-2">Symbol</th>
-                        <th className="px-4 py-2">Size</th>
-                        <th className="px-4 py-2">Entry Price</th>
-                        <th className="px-4 py-2">Mark Price</th>
-                        <th className="px-4 py-2">Liq. Price</th>
-                        <th className="px-4 py-2 text-right">PnL (ROE%)</th>
-                        <th className="px-4 py-2 text-right">Action</th>
-                    </tr>
-                </thead>
-                <tbody className="text-xs font-mono text-slate-300 divide-y divide-white/5">
-                    {POSITIONS.map((pos, i) => (
-                        <tr key={i} className="hover:bg-white/5 transition-colors group">
-                            <td className="px-4 py-3 font-bold text-white flex items-center gap-2">
-                                <span className={`px-1.5 rounded text-[10px] ${pos.type === 'LONG' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}`}>
-                                    {pos.type}
-                                </span>
-                                {pos.symbol}
-                                <span className="text-slate-500 text-[10px]">20x</span>
-                            </td>
-                            <td className="px-4 py-3">{pos.size}</td>
-                            <td className="px-4 py-3">{pos.entry.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                            <td className="px-4 py-3">{pos.mark.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                            <td className="px-4 py-3 text-orange-400">{pos.liq.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                            <td className="px-4 py-3 text-right">
-                                <div className={pos.pnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}>
-                                    {pos.pnl > 0 ? '+' : ''}{pos.pnl} USC
-                                </div>
-                                <div className={`text-[10px] ${pos.pnlPercent >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                                    ({pos.pnlPercent > 0 ? '+' : ''}{pos.pnlPercent}%)
-                                </div>
-                            </td>
-                            <td className="px-4 py-3 text-right">
-                                <button className="text-[10px] bg-slate-700 hover:bg-slate-600 text-white px-3 py-1 rounded transition-colors">
-                                    Close
-                                </button>
-                            </td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
-        </div>
-    </div>
-)
 
 
-
-export default function FuturesView() {
-    const { data, stats } = useChartData('BTC/USDT')
-    const { isLayoutLocked } = useDashboardStore()
-
-    // Helper to wrap widgets with standard styles
-    const Widget = ({ children, className = '' }: { children: React.ReactNode, className?: string }) => (
-        <div className={`h-full w-full bg-[#151926] rounded-xl border border-white/5 overflow-hidden flex flex-col relative group ${className}`}>
-            {/* Drag Handle Overlay - Only visible in Edit Mode */}
-            {!isLayoutLocked && (
-                <>
-                    <div className="drag-handle absolute inset-0 z-50 bg-blue-500/5 border-2 border-blue-500/30 rounded-xl cursor-move flex items-center justify-center backdrop-blur-[0px] hover:bg-blue-500/10 transition-colors">
-                        <div className="bg-blue-600/80 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-lg pointer-events-none">
-                            Drag
-                        </div>
-                    </div>
-                    {/* Visual Corner Indicator for Resize (Functional handle is injected by RGL via CSS) */}
-                    <div className="absolute bottom-0 right-0 w-8 h-8 z-[60] pointer-events-none flex items-end justify-end p-1">
-                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
-                    </div>
-                </>
-            )}
-            {children}
+// --- 3. LEVERAGE SLIDER (Extracted) ---
+const LeverageSlider = () => {
+    const { leverage, setLeverage } = useDashboardStore()
+    return (
+        <div className="mb-4 px-1">
+            <div className="flex justify-between text-[10px] font-bold text-slate-400 uppercase mb-2">
+                <span>Leverage</span>
+                <span className="text-white bg-slate-800 px-1 rounded">{leverage}x</span>
+            </div>
+            <div className="relative h-6 flex items-center group">
+                {/* Track */}
+                <div className="absolute inset-x-0 h-1 bg-[#1e232f] rounded-full overflow-hidden">
+                    <div className="h-full bg-blue-600 w-1/2 transition-all duration-300 group-hover:bg-blue-500" style={{ width: `${(leverage / 125) * 100}%` }} />
+                </div>
+                {/* Steps */}
+                <div className="absolute inset-x-0 h-1 flex justify-between px-0.5">
+                    {[0, 25, 50, 75, 100].map(s => <div key={s} className="w-0.5 h-0.5 bg-slate-600 rounded-full" />)}
+                </div>
+                {/* Thumb (Fake) */}
+                <div
+                    className="absolute h-3 w-3 bg-blue-500 rounded-full shadow-lg cursor-pointer hover:scale-110 active:scale-95 transition-transform left-1/2 ring-2 ring-[#151926]"
+                    style={{ left: `${(leverage / 125) * 100}%`, marginLeft: '-6px' }}
+                />
+                <input
+                    type="range"
+                    min="1" max="125"
+                    value={leverage}
+                    onChange={(e) => setLeverage(parseInt(e.target.value))}
+                    className="absolute inset-0 w-full opacity-0 cursor-pointer z-10"
+                />
+            </div>
         </div>
     )
+}
+
+export default function FuturesView() {
+    const { activePair } = useDashboardStore()
+    const [mobileTab, setMobileTab] = useState<'CHART' | 'TRADE' | 'BOOK'>('CHART')
+    const [sidebarTab, setSidebarTab] = useState<'TRADE' | 'BOOK'>('TRADE')
+
+    // Timeframe State
+    const [activeTF, setActiveTF] = useState('15m')
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+    const [isPreferencesOpen, setIsPreferencesOpen] = useState(false)
+    const [isIndicatorsOpen, setIsIndicatorsOpen] = useState(false)
+    const [chartType, setChartType] = useState('Candles')
+    const [isSnapshotOpen, setIsSnapshotOpen] = useState(false)
+
+    // Mock Data Generator (Self-Contained)
+    const stats = useMemo(() => {
+        const isBTC = activePair.includes('BTC')
+        const basePrice = isBTC ? 90123.5 : (activePair.includes('ETH') ? 3420.5 : 150.5)
+
+        return {
+            price: basePrice,
+            change24h: isBTC ? -0.16 : 1.25,
+            high: basePrice * 1.05,
+            low: basePrice * 0.95,
+            vol: 49809
+        }
+    }, [activePair])
+
+    // Ensure chart renders
+    const [data, setData] = useState<any[]>([])
+    useEffect(() => {
+        // Hydrate initial mock data
+        setData(Array.from({ length: 100 }, (_, i) => ({
+            time: Math.floor(Date.now() / 1000) - (100 - i) * 60,
+            open: stats.price + Math.random() * 50,
+            high: stats.price + 100,
+            low: stats.price - 100,
+            close: stats.price + Math.random() * 50 - 25
+        })))
+    }, [stats.price]) // Update on price change
 
     return (
-        <div className="flex flex-col h-full bg-[#0b0e14] overflow-hidden">
-            <FuturesHeader stats={stats} />
+        <div className="flex flex-col h-full bg-[#0b0e14] overflow-hidden font-sans">
+            <FuturesHeader stats={stats} onOpenPreferences={() => setIsPreferencesOpen(true)} />
 
-            <GridWrapper viewId="FUTURES">
-                {/* Chart Widget */}
-                <div key="chart">
-                    <Widget>
-                        <CustomChart data={data} lastPrice={stats?.price || 0} />
-                    </Widget>
+            {/* MAIN CONTENT AREA - 3 COLUMN LAYOUT */}
+            <div className="flex-1 flex overflow-hidden relative">
+
+                {/* 1. LEFT SIDEBAR: TRADE FORM (Fixed Width) */}
+                <div className={`
+                    w-full 
+                    nexus-7:w-[140px] 
+                    ipad-mini:w-[170px] 
+                    xga:w-[200px] 
+                    hd-720:w-[250px] 
+                    mac-air-13:w-[280px] 
+                    fhd:w-[300px] 
+                    2k:w-[340px] 
+                    4k:w-[420px] 
+                    flex-none border-r border-white/5 bg-[#151926] flex-col z-20 
+                    ${mobileTab === 'TRADE' ? 'flex' : 'hidden nexus-7:flex'}
+                `}>
+                    <div className="flex-1 overflow-y-auto custom-scrollbar">
+                        <TradeForm type="FUTURES" price={stats.price} />
+                    </div>
                 </div>
 
-                {/* Positions Widget */}
-                <div key="positions">
-                    <Widget>
+                {/* 2. CENTER AREA: CHART & ORDERS (Fluid) */}
+                <div className={`
+                    flex-1 flex flex-col min-w-0 bg-[#0b0e14] relative z-10
+                    ${mobileTab === 'CHART' ? 'flex' : 'hidden nexus-7:flex'}
+                `}>
+                    {/* Top: Chart Area with Dedicated Toolbar */}
+                    <div className="flex-1 flex flex-col relative border-b border-white/5 bg-[#0b0e14]">
+                        <TradingViewWidget
+                            symbol={`BINANCE:${activePair.replace('/', '')}`}
+                            theme="dark"
+                            interval={activeTF === '15m' ? '15' : activeTF === '1h' ? '60' : activeTF === '4h' ? '240' : activeTF === '1D' ? 'D' : 'W'}
+                        />
+                    </div>
+
+                    {/* Bottom: Positions Table (Resizable/Toggleable in future?) */}
+                    <div className="h-[250px] flex-none border-t border-white/5 bg-[#0b0e14] z-20">
                         <PositionsTable />
-                    </Widget>
+                    </div>
                 </div>
 
-                {/* OrderBook Widget */}
-                <div key="orderbook">
-                    <Widget>
-                        <OrderBook price={stats?.price} />
-                    </Widget>
+                {/* 3. RIGHT SIDEBAR: ORDER BOOK & TRADES (Fixed Width) */}
+                <div className={`
+                    w-full 
+                    nexus-7:w-[140px] 
+                    ipad-mini:w-[170px] 
+                    xga:w-[200px] 
+                    hd-720:w-[250px] 
+                    mac-air-13:w-[280px] 
+                    fhd:w-[300px] 
+                    2k:w-[340px] 
+                    4k:w-[420px] 
+                    flex-none border-l border-white/5 bg-[#151926] flex-col z-20
+                    ${mobileTab === 'BOOK' ? 'flex' : 'hidden nexus-7:flex'}
+                `}>
+                    {/* Top Half: Order Book */}
+                    <div className="flex-[0.6] flex flex-col min-h-0 border-b border-white/5">
+                        <OrderBook
+                            price={stats.price}
+                            quoteSymbol={activePair.split('/')[1]}
+                            baseSymbol={activePair.split('/')[0]}
+                        />
+                    </div>
+                    {/* Bottom Half: Trade History */}
+                    <div className="flex-[0.4] flex flex-col min-h-0">
+                        {/* Trade History Component (Reused/Mocked) */}
+                        <div className="flex-1 p-4 text-center text-slate-500 text-xs">Trade History</div>
+                    </div>
                 </div>
 
-                {/* TradeForm Widget (Includes Leverage for compactness) */}
-                <div key="tradeform">
-                    <Widget>
-                        <div className="flex flex-col h-full">
-                            <div className="p-2 border-b border-white/5 bg-[#0b0c10]/50">
-                                <LeverageSlider />
-                            </div>
-                            <div className="flex-1 overflow-auto">
-                                <TradeForm type="FUTURES" price={stats?.price} />
-                            </div>
-                        </div>
-                    </Widget>
-                </div>
-            </GridWrapper>
+            </div>
+
+            {/* MOBILE BOTTOM NAVIGATION (Visible < Nexus-7 600px) */}
+            <div className="nexus-7:hidden h-[50px] bg-[#151926] border-t border-white/5 flex items-center px-2 shrink-0 z-50">
+                {['CHART', 'TRADE', 'BOOK'].map(tab => (
+                    <button
+                        key={tab}
+                        onClick={() => {
+                            setMobileTab(tab as any)
+                            if (tab === 'TRADE') setSidebarTab('TRADE')
+                            if (tab === 'BOOK') setSidebarTab('BOOK')
+                        }}
+                        className={`flex-1 h-full flex items-center justify-center text-[10px] font-bold uppercase tracking-wider
+                        ${mobileTab === tab ? 'text-blue-400 bg-white/5 border-t-2 border-blue-500' : 'text-slate-500 border-t-2 border-transparent'}`}
+                    >
+                        {tab}
+                    </button>
+                ))}
+            </div>
         </div>
     )
 }

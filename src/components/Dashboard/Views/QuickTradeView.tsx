@@ -1,23 +1,66 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Search, Star, Zap, TrendingUp, BarChart2 } from 'lucide-react'
 import { AreaChart, Area, ResponsiveContainer } from 'recharts'
+import { investmentWallet } from '../../../state/investmentWallet'
+import QuickTradeModal, { AssetData } from '../Components/QuickTradeModal'
 
 // Mock Data
-const ASSETS = [
-    { id: '1', symbol: 'BTC', name: 'Bitcoin', price: 64230.50, change: -2.08, chartData: [40, 50, 45, 60, 55, 65, 60] },
-    { id: '2', symbol: 'ETH', name: 'Ethereum', price: 3450.12, change: 1.54, chartData: [30, 35, 40, 38, 45, 50, 48] },
-    { id: '3', symbol: 'SOL', name: 'Solana', price: 145.20, change: 12.50, chartData: [10, 20, 15, 30, 40, 60, 80] },
-    { id: '4', symbol: 'BNB', name: 'Binance Coin', price: 590.00, change: -0.50, chartData: [50, 48, 49, 47, 46, 48, 50] },
-    { id: '5', symbol: 'XRP', name: 'Ripple', price: 0.62, change: 5.20, chartData: [10, 12, 11, 14, 13, 15, 16] },
-    { id: '6', symbol: 'ADA', name: 'Cardano', price: 0.45, change: -1.20, chartData: [20, 18, 19, 17, 16, 15, 14] },
-    { id: '7', symbol: 'DOGE', name: 'Dogecoin', price: 0.12, change: 8.40, chartData: [5, 8, 7, 12, 10, 15, 14] },
-    { id: '8', symbol: 'DOT', name: 'Polkadot', price: 7.20, change: 0.80, chartData: [20, 22, 21, 23, 22, 24, 25] },
+const ASSETS: AssetData[] = [
+    {
+        symbol: 'BTC', name: 'Bitcoin', price: 64230.50, change24h: -2.08,
+        high24h: 65800.20, low24h: 62900.50, vol24h: '34.2B',
+        chartData: [40, 50, 45, 60, 55, 65, 60]
+    },
+    {
+        symbol: 'ETH', name: 'Ethereum', price: 3450.12, change24h: 1.54,
+        high24h: 3520.10, low24h: 3380.00, vol24h: '15.8B',
+        chartData: [30, 35, 40, 38, 45, 50, 48]
+    },
+    {
+        symbol: 'SOL', name: 'Solana', price: 145.20, change24h: 12.50,
+        high24h: 152.00, low24h: 130.50, vol24h: '4.2B',
+        chartData: [10, 20, 15, 30, 40, 60, 80]
+    },
+    {
+        symbol: 'BNB', name: 'Binance Coin', price: 590.00, change24h: -0.50,
+        high24h: 595.20, low24h: 585.50, vol24h: '1.2B',
+        chartData: [50, 48, 49, 47, 46, 48, 50]
+    },
+    {
+        symbol: 'XRP', name: 'Ripple', price: 0.62, change24h: 5.20,
+        high24h: 0.65, low24h: 0.58, vol24h: '890M',
+        chartData: [10, 12, 11, 14, 13, 15, 16]
+    },
+    {
+        symbol: 'ADA', name: 'Cardano', price: 0.45, change24h: -1.20,
+        high24h: 0.48, low24h: 0.44, vol24h: '450M',
+        chartData: [20, 18, 19, 17, 16, 15, 14]
+    },
+    {
+        symbol: 'DOGE', name: 'Dogecoin', price: 0.12, change24h: 8.40,
+        high24h: 0.13, low24h: 0.11, vol24h: '2.1B',
+        chartData: [5, 8, 7, 12, 10, 15, 14]
+    },
+    {
+        symbol: 'DOT', name: 'Polkadot', price: 7.20, change24h: 0.80,
+        high24h: 7.50, low24h: 6.90, vol24h: '320M',
+        chartData: [20, 22, 21, 23, 22, 24, 25]
+    },
 ]
 
 export default function QuickTradeView() {
     const [filter, setFilter] = useState<'ALL' | 'GAINERS' | 'LOSERS'>('ALL')
     const [searchTerm, setSearchTerm] = useState('')
+    const [investmentBalance, setInvestmentBalance] = useState(investmentWallet.getBalance())
+    const [selectedAsset, setSelectedAsset] = useState<AssetData | null>(null)
+
+    useEffect(() => {
+        const unsub = investmentWallet.subscribe((balance) => {
+            setInvestmentBalance(balance)
+        })
+        return unsub
+    }, [])
 
     // Filter Logic
     const filteredAssets = ASSETS.filter(asset => {
@@ -26,8 +69,8 @@ export default function QuickTradeView() {
 
         if (!matchesSearch) return false
 
-        if (filter === 'GAINERS') return asset.change > 0
-        if (filter === 'LOSERS') return asset.change < 0
+        if (filter === 'GAINERS') return asset.change24h > 0
+        if (filter === 'LOSERS') return asset.change24h < 0
         return true
     })
 
@@ -38,8 +81,8 @@ export default function QuickTradeView() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-[#151926] border border-white/5 rounded-2xl p-4 flex items-center justify-between relative overflow-hidden group">
                     <div>
-                        <div className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">Fiat Balance</div>
-                        <div className="text-2xl font-mono text-white font-medium">₹0.00</div>
+                        <div className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">Investment Wallet Balance</div>
+                        <div className="text-2xl font-mono text-white font-medium">${investmentBalance.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
                     </div>
                     <div className="w-10 h-10 rounded-full bg-[#3b82f6]/10 flex items-center justify-center">
                         <div className="w-2 h-2 rounded-full bg-[#3b82f6] shadow-[0_0_10px_#3b82f6]" />
@@ -99,7 +142,7 @@ export default function QuickTradeView() {
                 {/* Table Header */}
                 <div className="grid grid-cols-[1fr_1fr_1fr_1fr_1fr] md:grid-cols-[2fr_1.5fr_1.5fr_2fr_1.5fr] gap-4 px-6 py-3 bg-[#0a0a0a]/30 border-b border-white/5 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
                     <div>Asset</div>
-                    <div className="text-right">Price (INR)</div>
+                    <div className="text-right">Price (USD)</div>
                     <div className="text-right">24h Change</div>
                     <div className="hidden md:block h-full">Chart (24h)</div>
                     <div className="text-right">Action</div>
@@ -109,10 +152,11 @@ export default function QuickTradeView() {
                 <div className="overflow-y-auto divide-y divide-white/5">
                     {filteredAssets.map(asset => (
                         <motion.div
-                            key={asset.id}
+                            key={asset.symbol}
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             whileHover={{ backgroundColor: 'rgba(255,255,255,0.02)' }}
+                            onClick={() => setSelectedAsset(asset)}
                             className="grid grid-cols-[1fr_1fr_1fr_1fr_1fr] md:grid-cols-[2fr_1.5fr_1.5fr_2fr_1.5fr] gap-4 px-6 py-3.5 items-center group cursor-pointer"
                         >
                             {/* Asset */}
@@ -131,29 +175,29 @@ export default function QuickTradeView() {
 
                             {/* Price */}
                             <div className="text-right font-mono text-white text-sm font-medium">
-                                ₹{(asset.price * 83).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                                ${asset.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </div>
 
                             {/* 24h Change */}
-                            <div className={`text-right font-mono font-bold text-xs ${asset.change >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                {asset.change > 0 ? '+' : ''}{asset.change}%
+                            <div className={`text-right font-mono font-bold text-xs ${asset.change24h >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                {asset.change24h > 0 ? '+' : ''}{asset.change24h}%
                             </div>
 
                             {/* Chart (Sparkline) */}
                             <div className="hidden md:block h-8 w-full opacity-40 group-hover:opacity-100 transition-opacity">
                                 <ResponsiveContainer width="100%" height="100%">
-                                    <AreaChart data={asset.chartData.map((val, i) => ({ i, val }))}>
+                                    <AreaChart data={asset.chartData ? asset.chartData.map((val, i) => ({ i, val })) : []}>
                                         <defs>
-                                            <linearGradient id={`gradient-${asset.id}`} x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="5%" stopColor={asset.change >= 0 ? '#10b981' : '#f43f5e'} stopOpacity={0.3} />
-                                                <stop offset="95%" stopColor={asset.change >= 0 ? '#10b981' : '#f43f5e'} stopOpacity={0} />
+                                            <linearGradient id={`gradient-${asset.symbol}`} x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="5%" stopColor={asset.change24h >= 0 ? '#10b981' : '#f43f5e'} stopOpacity={0.3} />
+                                                <stop offset="95%" stopColor={asset.change24h >= 0 ? '#10b981' : '#f43f5e'} stopOpacity={0} />
                                             </linearGradient>
                                         </defs>
                                         <Area
                                             type="monotone"
                                             dataKey="val"
-                                            stroke={asset.change >= 0 ? '#10b981' : '#f43f5e'}
-                                            fill={`url(#gradient-${asset.id})`}
+                                            stroke={asset.change24h >= 0 ? '#10b981' : '#f43f5e'}
+                                            fill={`url(#gradient-${asset.symbol})`}
                                             strokeWidth={1.5}
                                         />
                                     </AreaChart>
@@ -171,6 +215,13 @@ export default function QuickTradeView() {
                     ))}
                 </div>
             </div>
+
+            {/* Quick Trade Modal */}
+            <QuickTradeModal
+                isOpen={!!selectedAsset}
+                onClose={() => setSelectedAsset(null)}
+                asset={selectedAsset}
+            />
         </div>
     )
 }

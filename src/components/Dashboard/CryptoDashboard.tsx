@@ -5,6 +5,7 @@ import QuickTradeView from './Views/QuickTradeView'
 import OrdersView from './Views/OrdersView'
 import ExchangeView from './Views/ExchangeView'
 import FuturesView from './Views/FuturesView'
+import MarketView from './Views/MarketView'
 
 export default function CryptoDashboard() {
     const { currentView } = useDashboardStore()
@@ -12,6 +13,8 @@ export default function CryptoDashboard() {
     // View Switcher logic
     const renderView = () => {
         switch (currentView) {
+            case 'MARKET':
+                return <MarketView />
             case 'QUICK':
                 return <QuickTradeView />
             case 'EXCHANGE':
@@ -21,7 +24,7 @@ export default function CryptoDashboard() {
             case 'ORDERS':
                 return <OrdersView />
             default:
-                return <QuickTradeView />
+                return <MarketView />
         }
     }
 

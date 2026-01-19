@@ -15,6 +15,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useUIStore } from '../../state/uiStore'
 import { ProfileModal } from '../common/ProfileModal'
 import ShowChartIcon from '@mui/icons-material/ShowChart'
+import { useDashboardStore } from '../../store/dashboardStore'
 
 const drawerWidth = 200
 const collapsedDrawerWidth = 64
@@ -24,6 +25,15 @@ export default function Layout({ children }: { children: ReactNode }) {
   const [collapsed, setCollapsed] = useState(false)
   const location = useLocation()
   const { showGradients, enableAnimations, toggleProfile } = useUIStore()
+  const { isFullScreen, setIsFullScreen } = useDashboardStore()
+
+  useEffect(() => {
+    const handleFullScreenChange = () => {
+      setIsFullScreen(!!document.fullscreenElement)
+    }
+    document.addEventListener('fullscreenchange', handleFullScreenChange)
+    return () => document.removeEventListener('fullscreenchange', handleFullScreenChange)
+  }, [setIsFullScreen])
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen)
@@ -57,7 +67,7 @@ export default function Layout({ children }: { children: ReactNode }) {
         {!collapsed && (
           <>
             <Typography variant="h6" className="text-[var(--accent)] font-black tracking-widest font-metal">CRYPTIC</Typography>
-            <Typography variant="body2" className="text-slate-300">Tagline bata do bhai!</Typography>
+            <Typography variant="body2" className="text-slate-300">Growth made simple</Typography>
           </>
         )}
         <IconButton
@@ -144,8 +154,54 @@ export default function Layout({ children }: { children: ReactNode }) {
       onScrollCapture={handleScroll}
     >
       <CssBaseline />
+
+      {/* Conditionally render Nav based on isFullScreen */}
+      {!isFullScreen && !isMobile && (
+        <Box component="nav" sx={{ width: { sm: currentDrawerWidth }, flexShrink: { sm: 0 }, position: 'fixed', height: '100vh', zIndex: (theme) => theme.zIndex.appBar - 1 }} aria-label="mailbox folders">
+          {/* ... drawer content ... */}
+          <Drawer
+            variant="temporary"
+            open={mobileOpen}
+            onClose={handleDrawerToggle}
+            ModalProps={{ keepMounted: true }}
+            sx={{
+              display: { xs: 'block', sm: 'none' },
+              '& .MuiDrawer-paper': {
+                boxSizing: 'border-box',
+                width: drawerWidth,
+                borderRight: 'none',
+                backgroundColor: 'transparent',
+                backgroundImage: 'none'
+              },
+              '& .MuiBackdrop-root': { backgroundColor: 'transparent' }
+            }}
+          >
+            {drawer}
+          </Drawer>
+          <Drawer
+            variant="permanent"
+            sx={{
+              display: { xs: 'none', sm: 'block' },
+              '& .MuiDrawer-paper': {
+                boxSizing: 'border-sizing',
+                width: currentDrawerWidth,
+                borderRight: 'none',
+                backgroundColor: 'transparent',
+                backgroundImage: 'none',
+                transition: 'width 0.3s ease'
+              }
+            }}
+            open
+          >
+            {drawer}
+          </Drawer>
+        </Box>
+      )}
+
+      {/* Conditionally render Mobile Nav */}
       <AnimatePresence>
-        {isMobile && navVisible && (
+        {!isFullScreen && isMobile && navVisible && (
+          // ... mobile nav content ...
           <motion.div
             initial={{ y: 100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -160,10 +216,8 @@ export default function Layout({ children }: { children: ReactNode }) {
               pointerEvents: 'none' // Allows clicks pass through the empty space around the bar
             }}
           >
-            {/* The Actual "Island" Container */}
+            {/* ... content ... */}
             <div className="pointer-events-auto bg-[#13141b]/90 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl shadow-black/80 flex items-center justify-between px-2 py-2">
-
-              {/* Render Nav Items (Filter out desktop-only items if needed) */}
               {navItems.filter(i => !(i as any).desktopOnly && i.label !== 'Crypto Test').map((item) => (
                 <NavLink
                   key={item.to}
@@ -214,59 +268,20 @@ export default function Layout({ children }: { children: ReactNode }) {
         )}
       </AnimatePresence>
 
-      {!isMobile && (
-        <Box component="nav" sx={{ width: { sm: currentDrawerWidth }, flexShrink: { sm: 0 }, position: 'fixed', height: '100vh', zIndex: (theme) => theme.zIndex.appBar - 1 }} aria-label="mailbox folders">
-          <Drawer
-            variant="temporary"
-            open={mobileOpen}
-            onClose={handleDrawerToggle}
-            ModalProps={{ keepMounted: true }}
-            sx={{
-              display: { xs: 'block', sm: 'none' },
-              '& .MuiDrawer-paper': {
-                boxSizing: 'border-box',
-                width: drawerWidth,
-                borderRight: 'none',
-                backgroundColor: 'transparent',
-                backgroundImage: 'none'
-              },
-              '& .MuiBackdrop-root': { backgroundColor: 'transparent' }
-            }}
-          >
-            {drawer}
-          </Drawer>
-          <Drawer
-            variant="permanent"
-            sx={{
-              display: { xs: 'none', sm: 'block' },
-              '& .MuiDrawer-paper': {
-                boxSizing: 'border-sizing',
-                width: currentDrawerWidth,
-                borderRight: 'none',
-                backgroundColor: 'transparent',
-                backgroundImage: 'none',
-                transition: 'width 0.3s ease'
-              }
-            }}
-            open
-          >
-            {drawer}
-          </Drawer>
-        </Box>
-      )}
       <Box
         component="main"
         sx={{
           flexGrow: 1,
           p: location.pathname.includes('/app/overview') ? 0 : { xs: 2, md: 4 },
           minWidth: 0,
-          ml: { sm: isMobile ? 0 : `${currentDrawerWidth}px` },
+          ml: { sm: isMobile || isFullScreen ? 0 : `${currentDrawerWidth}px` }, // Set ml to 0 if isFullScreen
           transition: 'margin-left 0.3s ease',
           pb: isMobile ? '120px' : '0',
           overflowY: 'auto',
           height: '100%',
         }}
       >
+
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

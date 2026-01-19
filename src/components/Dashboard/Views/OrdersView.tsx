@@ -1,10 +1,20 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { FileText, Filter, Download } from 'lucide-react'
 import { useDashboardStore } from '../../../store/dashboardStore'
+import { investmentWallet } from '../../../state/investmentWallet'
 
 export default function OrdersView() {
     const { setView } = useDashboardStore()
+    const [investmentBalance, setInvestmentBalance] = useState(investmentWallet.getBalance())
+
+    useEffect(() => {
+        const unsub = investmentWallet.subscribe((balance) => {
+            setInvestmentBalance(balance)
+        })
+        return unsub
+    }, [])
+
     const TABS = ['OPEN ORDERS', 'ORDER HISTORY', 'TRADE HISTORY']
 
     return (
@@ -14,8 +24,8 @@ export default function OrdersView() {
                 <h1 className="text-2xl font-bold text-white">Orders</h1>
                 <div className="flex items-center gap-4">
                     <div className="bg-[#151926] border border-white/5 rounded-lg px-4 py-2 flex items-center gap-3">
-                        <div className="text-[10px] text-slate-500 font-bold uppercase">Fiat Balance</div>
-                        <div className="text-sm font-mono text-emerald-400">₹0.00</div>
+                        <div className="text-[10px] text-slate-500 font-bold uppercase">Investment Wallet Balance</div>
+                        <div className="text-sm font-mono text-emerald-400">${investmentBalance.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
                     </div>
                     <button className="flex items-center gap-2 bg-white/5 hover:bg-white/10 text-xs font-bold px-4 py-2 rounded-lg transition-colors border border-white/5">
                         <Download size={14} />

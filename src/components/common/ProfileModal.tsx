@@ -24,7 +24,7 @@ const ASSET_DATA = [
     { name: 'Altcoins', value: 5, color: '#e9ecff' },
 ]
 
-type Tab = 'overview' | 'security' | 'preferences' | 'activity' | 'support'
+type Tab = 'overview' | 'security' | 'preferences' | 'autosweep' | 'activity' | 'support'
 
 import { cryptoMeta } from '../../state/cryptoMeta'
 import type { CryptoSymbol } from '../../state/cryptoStore'
@@ -76,6 +76,7 @@ export const ProfileModal = () => {
         { id: 'overview', label: 'Overview', icon: LayoutDashboard },
         { id: 'security', label: 'Security', icon: Shield },
         { id: 'preferences', label: 'Preferences', icon: Settings },
+        { id: 'autosweep', label: 'Auto Sweep', icon: TrendingUp },
         { id: 'activity', label: 'Activity', icon: Activity },
         { id: 'support', label: 'Support', icon: HelpCircle },
     ]
@@ -340,75 +341,83 @@ export const ProfileModal = () => {
                             </div>
                         </div>
 
-                        {/* Auto Sweep Section */}
-                        <div>
-                            <h3 className="text-white font-bold mb-4 flex items-center gap-2">
-                                <Activity size={18} className="text-emerald-400" /> Auto Sweep
-                            </h3>
-                            <p className="text-xs text-slate-500 mb-4">Automatically transfer excess funds to your investment wallet.</p>
-                            <div className="bg-[#1a1c2e] rounded-xl border border-white/5 divide-y divide-white/5 max-h-64 overflow-y-auto custom-scrollbar">
-                                {availableWallets.map(wallet => {
-                                    const settings = getSweepSettings(wallet)
-                                    const meta = cryptoMeta[wallet]
-                                    return (
-                                        <div key={wallet} className="p-4 space-y-3">
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-3">
-                                                    <img src={meta?.icon} alt={meta?.name} className="w-8 h-8 rounded-full" />
-                                                    <div>
-                                                        <p className="text-white font-medium text-sm">{meta?.name}</p>
-                                                        <p className="text-xs text-slate-500">{wallet} Wallet</p>
-                                                    </div>
-                                                </div>
-                                                <button
-                                                    onClick={() => setSweepSettings(wallet, { ...settings, enabled: !settings.enabled })}
-                                                    className={`w-10 h-6 rounded-full relative transition-colors ${settings.enabled ? 'bg-emerald-500' : 'bg-slate-600'}`}
-                                                >
-                                                    <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${settings.enabled ? 'left-[calc(100%-20px)]' : 'left-1'}`} />
-                                                </button>
-                                            </div>
-                                            {settings.enabled && (
-                                                <div className="flex items-center gap-3 animate-in fade-in slide-in-from-top-1">
-                                                    <span className="text-xs text-slate-400">Threshold:</span>
-                                                    <input
-                                                        type="number"
-                                                        value={settings.threshold}
-                                                        onChange={(e) => setSweepSettings(wallet, { ...settings, threshold: e.target.value })}
-                                                        placeholder="0.00"
-                                                        className="bg-[#13141b] border border-white/10 rounded-lg px-3 py-1 text-sm text-white w-24 focus:outline-none focus:border-emerald-500/50"
-                                                    />
-                                                    <span className="text-xs text-slate-500">{wallet}</span>
-                                                </div>
-                                            )}
-                                        </div>
-                                    )
-                                })}
+                        {/* Auto Sweep Section - MOVED TO NEW TAB */}
+                    </div>
+                )
+
+            case 'autosweep':
+                return (
+                    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                        <div className="flex items-center justify-between mb-2">
+                            <div>
+                                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                                    <TrendingUp size={24} className="text-emerald-400" /> Auto Sweep
+                                </h2>
+                                <p className="text-sm text-slate-400 mt-1">Automatically transfer excess funds to your investment wallet.</p>
                             </div>
+                            {/* Global Toggle could go here */}
                         </div>
 
-                        {/* Notifications (Existing) */}
-                        <div className="pt-4 border-t border-white/10">
-                            <h3 className="text-white font-bold mb-3 flex items-center gap-2">
-                                <Bell size={18} className="text-yellow-400" /> Notifications
-                            </h3>
-                            <div className="space-y-3">
-                                {Object.entries(notifications).map(([key, val]) => (
-                                    <div key={key} className="flex items-center justify-between">
-                                        <span className="text-slate-300 capitalize text-sm">{key} Alerts</span>
-                                        <button
-                                            onClick={() => setNotifications(p => ({ ...p, [key]: !p[key as keyof typeof p] }))}
-                                            className={`w-10 h-6 rounded-full relative transition-colors ${val ? 'bg-green-500' : 'bg-slate-600'}`}
-                                        >
-                                            <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${val ? 'left-[calc(100%-20px)]' : 'left-1'}`} />
-                                        </button>
+                        <div className="bg-[#1a1c2e] rounded-xl border border-white/5 divide-y divide-white/5 max-h-[60vh] overflow-y-auto custom-scrollbar">
+                            {availableWallets.map(wallet => {
+                                const settings = getSweepSettings(wallet)
+                                const meta = cryptoMeta[wallet]
+                                return (
+                                    <div key={wallet} className="p-5 space-y-4 hover:bg-white/[0.02] transition-colors">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-4">
+                                                <div className="relative">
+                                                    <img src={meta?.icon} alt={meta?.name} className="w-10 h-10 rounded-full" />
+                                                    {settings.enabled && <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-[#1a1c2e]" />}
+                                                </div>
+                                                <div>
+                                                    <p className="text-white font-bold text-base">{meta?.name}</p>
+                                                    <p className="text-xs text-slate-500 font-mono">{wallet} Wallet</p>
+                                                </div>
+                                            </div>
+                                            <button
+                                                onClick={() => setSweepSettings(wallet, { ...settings, enabled: !settings.enabled })}
+                                                className={`w-12 h-7 rounded-full relative transition-colors ${settings.enabled ? 'bg-emerald-500' : 'bg-slate-600'}`}
+                                            >
+                                                <div className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow-sm transition-transform ${settings.enabled ? 'left-[calc(100%-24px)]' : 'left-1'}`} />
+                                            </button>
+                                        </div>
+
+                                        <AnimatePresence>
+                                            {settings.enabled && (
+                                                <motion.div
+                                                    initial={{ height: 0, opacity: 0 }}
+                                                    animate={{ height: 'auto', opacity: 1 }}
+                                                    exit={{ height: 0, opacity: 0 }}
+                                                    className="overflow-hidden"
+                                                >
+                                                    <div className="pt-2 flex items-center gap-4 bg-[#13141b] p-3 rounded-lg border border-white/5">
+                                                        <span className="text-sm text-slate-400 font-medium">Sweep Threshold:</span>
+                                                        <div className="flex-1 flex items-center gap-2 bg-[#0b0e14] border border-white/10 rounded-md px-3 py-2 focus-within:border-emerald-500/50 transition-colors">
+                                                            <input
+                                                                type="number"
+                                                                value={settings.threshold}
+                                                                onChange={(e) => setSweepSettings(wallet, { ...settings, threshold: e.target.value })}
+                                                                placeholder="0.00"
+                                                                className="bg-transparent text-white w-full focus:outline-none font-mono text-sm"
+                                                            />
+                                                            <span className="text-xs text-slate-500 font-bold">{wallet}</span>
+                                                        </div>
+                                                    </div>
+                                                    <p className="text-[10px] text-slate-500 mt-2 pl-1">
+                                                        * Anything above <span className="text-white font-mono">{settings.threshold || '0'} {wallet}</span> will be moved to Vault.
+                                                    </p>
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
                                     </div>
-                                ))}
-                            </div>
+                                )
+                            })}
                         </div>
                     </div>
                 )
 
-            case 'activity':
+            case 'support':
                 return (
                     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
                         <div className="flex items-center justify-between">

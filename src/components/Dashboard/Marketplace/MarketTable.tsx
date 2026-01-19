@@ -2,9 +2,20 @@ import React from 'react'
 import { motion } from 'framer-motion'
 import { TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight, Zap } from 'lucide-react'
 import { useMarketStore, Coin } from '../../../store/marketStore'
+import { useDashboardStore } from '../../../store/dashboardStore'
 
 export default function MarketTable() {
     const { coins, searchQuery, activeFilter, selectCoin } = useMarketStore()
+    const { setView, setPair } = useDashboardStore()
+
+    // Navigation Handler
+    const handleRefNav = (coin: Coin) => {
+        // Construct pair, default to USDT for now
+        const pair = `${coin.symbol}/USDT`
+        setPair(pair)
+        setView('EXCHANGE')
+        // We might also want to scroll to top or similar, but this is enough logic for now
+    }
 
     // Filter Logic
     const filteredCoins = coins.filter(coin => {
@@ -34,7 +45,7 @@ export default function MarketTable() {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         whileHover={{ backgroundColor: 'rgba(255,255,255,0.02)' }}
-                        onClick={() => selectCoin(coin)}
+                        onClick={() => handleRefNav(coin)}
                         className="grid grid-cols-[2fr_1.5fr_1fr_1.5fr_1.5fr_1fr] gap-4 px-6 py-4 items-center group transition-colors cursor-pointer"
                     >
                         {/* Asset Name */}
@@ -76,7 +87,7 @@ export default function MarketTable() {
                         </div>
 
                         {/* Action Button */}
-                        <div className="flex justify-end" onClick={(e) => { e.stopPropagation(); selectCoin(coin); }}>
+                        <div className="flex justify-end" onClick={(e) => { e.stopPropagation(); handleRefNav(coin); }}>
                             <button className="opacity-0 group-hover:opacity-100 translate-x-2 group-hover:translate-x-0 transition-all bg-[#6a7bff] hover:bg-blue-500 text-white text-xs font-bold px-4 py-2 rounded-lg shadow-[0_0_15px_rgba(106,123,255,0.3)] active:scale-95 flex items-center gap-2">
                                 <Zap size={14} className="fill-white" /> Trade
                             </button>

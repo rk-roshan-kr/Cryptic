@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { MARKET_DATA } from '../data/appData'
 
 export interface Candle {
     time: number
@@ -10,8 +11,9 @@ export interface Candle {
 }
 
 // Generate initial history
-const generateHistory = (count: number): Candle[] => {
-    let price = 64230.50
+const generateHistory = (count: number, symbol: string): Candle[] => {
+    const coin = MARKET_DATA.find(c => symbol.includes(c.symbol))
+    let price = coin ? coin.price : 100.00 // Default to 100 if unknown
     const data: Candle[] = []
     const now = Date.now()
 
@@ -45,7 +47,7 @@ export function useChartData(symbol: string = 'BTC/USDT') {
 
     // Initial Load
     useEffect(() => {
-        const history = generateHistory(100)
+        const history = generateHistory(100, symbol)
         setData(history)
         setLastPrice(history[history.length - 1].close)
     }, [symbol])

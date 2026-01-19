@@ -1,66 +1,105 @@
-import React from 'react'
+// Dynamic generation inside component
+import { useMemo } from 'react'
 
-const ASKS = [
-    { price: 64235.50, amount: 0.12, total: 2345.12 },
-    { price: 64235.00, amount: 0.05, total: 1123.45 },
-    { price: 64234.50, amount: 1.20, total: 32000.00 },
-    { price: 64234.00, amount: 0.45, total: 12450.50 },
-    { price: 64233.50, amount: 0.01, total: 500.00 },
-]
+export default function OrderBook({ price, quoteSymbol = 'USDT', baseSymbol = 'BTC' }: { price?: number, quoteSymbol?: string, baseSymbol?: string }) {
+    const currentPrice = price || 65000
 
-const BIDS = [
-    { price: 64230.50, amount: 0.80, total: 15400.00 },
-    { price: 64230.00, amount: 1.50, total: 45000.20 },
-    { price: 64229.50, amount: 0.33, total: 8900.50 },
-    { price: 64229.00, amount: 0.10, total: 2300.10 },
-    { price: 64228.50, amount: 0.05, total: 1100.00 },
-]
+    const { asks, bids } = useMemo(() => {
+        const _asks = []
+        const _bids = []
+        for (let i = 0; i < 15; i++) {
+            const askPrice = currentPrice + (i + 1) * (currentPrice * 0.0001)
+            const bidPrice = currentPrice - (i + 1) * (currentPrice * 0.0001)
+            _asks.push({
+                price: askPrice,
+                amount: Math.random() * 0.5,
+                total: askPrice * (Math.random() * 0.5)
+            })
+            _bids.push({
+                price: bidPrice,
+                amount: Math.random() * 0.5,
+                total: bidPrice * (Math.random() * 0.5)
+            })
+        }
+        return { asks: _asks, bids: _bids }
+    }, [currentPrice])
 
-export default function OrderBook({ price }: { price?: number }) {
+    const ASKS = asks
+    const BIDS = bids
+
     return (
-        <div className="h-full flex flex-col bg-[#13141b] rounded-xl border border-white/5 overflow-hidden">
+        <div className="h-full flex flex-col bg-[#151926] overflow-hidden text-[10px] nexus-7:text-[8px] font-sans">
             {/* Header */}
-            <div className="p-3 border-b border-white/5 flex justify-between text-xs text-slate-500 font-bold uppercase">
-                <span>Price</span>
-                <span>Amount</span>
-                <span>Total</span>
+            <div className="flex items-center justify-between px-2 py-1.5 nexus-7:py-0.5 border-b border-white/5 bg-[#151926] shrink-0">
+                <div className="font-bold text-slate-400">Order Book</div>
+                <div className="flex gap-2">
+                    <button className="hover:text-white text-slate-500"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="nexus-7:w-2.5 nexus-7:h-2.5"><path d="M4 4h16v16H4z" /></svg></button>
+                    <button className="hover:text-white text-slate-500"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="nexus-7:w-2.5 nexus-7:h-2.5"><path d="M4 12h16v8H4z" /></svg></button>
+                    <button className="hover:text-white text-slate-500"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="nexus-7:w-2.5 nexus-7:h-2.5"><path d="M4 4h16v8H4z" /></svg></button>
+                </div>
+            </div>
+
+            {/* Columns Header */}
+            <div className="grid grid-cols-3 px-2 py-1 nexus-7:py-0.5 text-[#787b86] font-bold uppercase shrink-0 text-[10px] nexus-7:text-[7px]">
+                <span className="text-left font-sans">Price({quoteSymbol})</span>
+                <span className="text-right font-sans">Qty({baseSymbol})</span>
+                <span className="text-right font-sans">Total({quoteSymbol})</span>
             </div>
 
             {/* Asks (Sells) - Red */}
-            <div className="flex-1 overflow-hidden relative">
-                <div className="absolute inset-x-0 bottom-0 p-1 space-y-0.5">
-                    {ASKS.slice().reverse().map((ask, i) => ( // Reverse to show lowest ask at bottom
-                        <div key={i} className="grid grid-cols-3 text-[10px] cursor-pointer hover:bg-white/5 px-1 py-0.5 relative group">
-                            <div className="text-rose-400 font-mono z-10">{ask.price.toLocaleString()}</div>
-                            <div className="text-right text-slate-400 font-mono z-10">{ask.amount}</div>
-                            <div className="text-right text-slate-400 font-mono z-10">{ask.total.toLocaleString()}</div>
-                            {/* Depth Bar */}
-                            <div className="absolute top-0 right-0 bottom-0 bg-rose-500/10 z-0 transition-all" style={{ width: `${Math.random() * 80}%` }} />
+            <div className="flex-1 overflow-hidden relative flex flex-col justify-end">
+                <div className="w-full">
+                    {ASKS.slice().reverse().map((ask, i) => (
+                        <div key={i} className="grid grid-cols-3 px-2 py-0.5 nexus-7:py-0 cursor-pointer hover:bg-white/5 relative group">
+                            <div className="text-rose-400 font-mono z-10">{ask.price.toLocaleString(undefined, { minimumFractionDigits: 1 })}</div>
+                            <div className="text-right text-slate-300 font-mono z-10">{ask.amount.toFixed(3)}</div>
+                            <div className="text-right text-slate-500 font-mono z-10">{ask.total.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>
+                            <div className="absolute top-0 right-0 bottom-0 bg-rose-500/10 z-0 transition-all" style={{ width: `${Math.random() * 60}%` }} />
+                        </div>
+                    ))}
+                    {/* Repeat for density */}
+                    {ASKS.slice().reverse().map((ask, i) => (
+                        <div key={`d-${i}`} className="grid grid-cols-3 px-2 py-0.5 nexus-7:py-0 cursor-pointer hover:bg-white/5 relative group opacity-60">
+                            <div className="text-rose-400 font-mono z-10">{(ask.price + 5).toLocaleString(undefined, { minimumFractionDigits: 1 })}</div>
+                            <div className="text-right text-slate-300 font-mono z-10">{ask.amount.toFixed(3)}</div>
+                            <div className="text-right text-slate-500 font-mono z-10">{ask.total.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>
+                            <div className="absolute top-0 right-0 bottom-0 bg-rose-500/10 z-0 transition-all" style={{ width: `${Math.random() * 40}%` }} />
                         </div>
                     ))}
                 </div>
             </div>
 
-            {/* Current Price */}
-            <div className="py-1.5 px-4 bg-[#0b0c10] border-y border-white/5 flex items-center justify-between">
-                <div className="text-sm font-bold text-emerald-400 flex items-center gap-2">
-                    {price ? price.toLocaleString(undefined, { minimumFractionDigits: 2 }) : '---'} <span className="text-[10px] text-slate-500 font-normal">USD</span>
+            {/* Current Price Strip */}
+            <div className="py-2 nexus-7:py-1 px-3 border-y border-white/5 bg-[#0b0e14] flex items-center justify-between shrink-0 my-0.5">
+                <div className="flex items-center gap-2">
+                    <span className={`text-lg nexus-7:text-sm font-bold font-mono ${price && price > 64230 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                        {price?.toLocaleString(undefined, { minimumFractionDigits: 1 }) || '---'}
+                        <span className="text-lg nexus-7:text-sm opacity-0 font-sans">⬆</span>
+                    </span>
                 </div>
-                <div className="text-[10px] text-slate-500">
-                    ≈ ₹{price ? (price * 83).toLocaleString(undefined, { maximumFractionDigits: 0 }) : '---'}
-                </div>
+                <span className="text-slate-500 font-mono underline decoration-dotted underline-offset-2 hover:text-slate-300 cursor-pointer text-sm nexus-7:text-xs">
+                    {price ? (price + 0.5).toLocaleString(undefined, { minimumFractionDigits: 1 }) : '--'}
+                </span>
             </div>
 
             {/* Bids (Buys) - Green */}
             <div className="flex-1 overflow-hidden relative">
-                <div className="absolute inset-x-0 top-0 p-1 space-y-0.5">
+                <div className="w-full">
                     {BIDS.map((bid, i) => (
-                        <div key={i} className="grid grid-cols-3 text-[10px] cursor-pointer hover:bg-white/5 px-1 py-0.5 relative group">
-                            <div className="text-emerald-400 font-mono z-10">{bid.price.toLocaleString()}</div>
-                            <div className="text-right text-slate-400 font-mono z-10">{bid.amount}</div>
-                            <div className="text-right text-slate-400 font-mono z-10">{bid.total.toLocaleString()}</div>
-                            {/* Depth Bar */}
-                            <div className="absolute top-0 right-0 bottom-0 bg-emerald-500/10 z-0 transition-all" style={{ width: `${Math.random() * 80}%` }} />
+                        <div key={i} className="grid grid-cols-3 px-2 py-0.5 nexus-7:py-0 cursor-pointer hover:bg-white/5 relative group">
+                            <div className="text-emerald-400 font-mono z-10">{bid.price.toLocaleString(undefined, { minimumFractionDigits: 1 })}</div>
+                            <div className="text-right text-slate-300 font-mono z-10">{bid.amount.toFixed(3)}</div>
+                            <div className="text-right text-slate-500 font-mono z-10">{bid.total.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>
+                            <div className="absolute top-0 right-0 bottom-0 bg-emerald-500/10 z-0 transition-all" style={{ width: `${Math.random() * 60}%` }} />
+                        </div>
+                    ))}
+                    {/* Repeat for density */}
+                    {BIDS.map((bid, i) => (
+                        <div key={`d-${i}`} className="grid grid-cols-3 px-2 py-0.5 nexus-7:py-0 cursor-pointer hover:bg-white/5 relative group opacity-60">
+                            <div className="text-emerald-400 font-mono z-10">{(bid.price - 5).toLocaleString(undefined, { minimumFractionDigits: 1 })}</div>
+                            <div className="text-right text-slate-300 font-mono z-10">{bid.amount.toFixed(3)}</div>
+                            <div className="text-right text-slate-500 font-mono z-10">{bid.total.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>
+                            <div className="absolute top-0 right-0 bottom-0 bg-emerald-500/10 z-0 transition-all" style={{ width: `${Math.random() * 40}%` }} />
                         </div>
                     ))}
                 </div>

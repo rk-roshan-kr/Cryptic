@@ -22,7 +22,7 @@ function loadInitial(): Transaction[] {
   try {
     const raw = localStorage.getItem(LS_KEY)
     if (raw) return JSON.parse(raw)
-  } catch {}
+  } catch { }
   return []
 }
 
@@ -31,7 +31,7 @@ class TransactionsStore {
   private listeners: Set<Listener> = new Set()
 
   private persist() {
-    try { localStorage.setItem(LS_KEY, JSON.stringify(this.transactions)) } catch {}
+    try { localStorage.setItem(LS_KEY, JSON.stringify(this.transactions)) } catch { }
   }
 
   getAll(): Transaction[] {

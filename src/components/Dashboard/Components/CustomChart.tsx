@@ -1,224 +1,221 @@
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react';
 import {
-    ComposedChart,
-    Bar,
-    XAxis,
-    YAxis,
-    CartesianGrid,
-    Tooltip,
-    ResponsiveContainer,
-    Cell
-} from 'recharts'
-import { format } from 'date-fns'
-import { Settings, Maximize2, Camera, ChevronDown } from 'lucide-react'
+    createChart,
+    ColorType,
+    IChartApi,
+    CrosshairMode,
+    ISeriesApi,
+    LineStyle,
+    UTCTimestamp,
+    // v5 Imports:
+    CandlestickSeries,
+    HistogramSeries
+} from 'lightweight-charts';
 
-// Types
+// --- Types ---
 export interface Candle {
-    time: number
-    open: number
-    high: number
-    low: number
-    close: number
-    volume: number
+    time: number; // Unix timestamp in milliseconds
+    open: number;
+    high: number;
+    low: number;
+    close: number;
+    volume: number;
 }
 
-// --- Optimized Candle Shape ---
-// Renders the Wick and Body in a single pass using the Range [Low, High]
-const CandleShape = (props: any) => {
-    const { x, y, width, height, payload } = props
-    const { open, close, high, low } = payload
-
-    // 1. Calculate the scale ratio based on the container height and value range
-    // Recharts passes 'y' as the top pixel (High) and 'height' as total pixel height (High - Low)
-    const range = high - low
-    if (range === 0) return null
-
-    const ratio = height / range
-
-    // 2. Calculate Open/Close pixels relative to the High (y)
-    // We use Math.abs because SVG coordinates grow downwards
-    const openY = y + (high - open) * ratio
-    const closeY = y + (high - close) * ratio
-
-    const isGreen = close >= open
-    const color = isGreen ? '#10B981' : '#EF4444' // Tailwind Emerald-500 : Red-500
-
-    const bodyTop = Math.min(openY, closeY)
-    const bodyHeight = Math.max(1, Math.abs(openY - closeY)) // Ensure at least 1px visibility
-
-    // 3. Draw Wick (Line) and Body (Rect)
-    // We center the wick: x + width / 2
-    const center = x + width / 2
-
-    return (
-        <g>
-            {/* Wick: Drawn from Top (y) to Bottom (y + height) */}
-            <line
-                x1={center}
-                y1={y}
-                x2={center}
-                y2={y + height}
-                stroke={color}
-                strokeWidth={1}
-            />
-            {/* Body: Drawn using calculated Open/Close Y positions */}
-            <rect
-                x={x}
-                y={bodyTop}
-                width={width}
-                height={bodyHeight}
-                fill={color}
-                stroke="none"
-            />
-        </g>
-    )
+interface ChartProps {
+    data: Candle[];
+    lastPrice: number;
 }
 
-// --- Optimized Tooltip ---
-const CustomTooltip = ({ active, payload, label }: any) => {
-    if (!active || !payload || !payload.length) return null
-    const data = payload[0].payload
-    const isGreen = data.close >= data.open
+export function TradingChart({ data, lastPrice }: ChartProps) {
+    const chartContainerRef = useRef<HTMLDivElement>(null);
+    const chartRef = useRef<IChartApi | null>(null);
+    // Note: In v5, generic type arguments for ISeriesApi might differ slightly, 
+    // but 'any' or specific generic usage fixes strict typing issues for refs.
+    const candleSeriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
+
+
+    const [legend, setLegend] = useState<Candle | null>(null);
+
+    useEffect(() => {
+        if (!chartContainerRef.current) return;
+
+        // 1. Create Chart Instance
+        const chart = createChart(chartContainerRef.current, {
+            layout: {
+                background: { type: ColorType.Solid, color: '#0B0E11' },
+                textColor: '#64748b',
+                fontFamily: "'Roboto', sans-serif",
+            },
+            grid: {
+                vertLines: { color: 'rgba(255, 255, 255, 0.04)' },
+                horzLines: { color: 'rgba(255, 255, 255, 0.04)' },
+            },
+            width: chartContainerRef.current.clientWidth,
+            height: chartContainerRef.current.clientHeight,
+            crosshair: {
+                mode: CrosshairMode.Normal,
+                vertLine: {
+                    width: 1,
+                    color: 'rgba(255, 255, 255, 0.2)',
+                    style: LineStyle.Dashed,
+                    labelBackgroundColor: '#1e293b',
+                },
+                horzLine: {
+                    width: 1,
+                    color: 'rgba(255, 255, 255, 0.2)',
+                    style: LineStyle.Dashed,
+                    labelBackgroundColor: '#1e293b',
+                },
+            },
+            timeScale: {
+                borderColor: 'rgba(255, 255, 255, 0.1)',
+                timeVisible: true,
+                secondsVisible: false,
+            },
+            rightPriceScale: {
+                borderColor: 'rgba(255, 255, 255, 0.1)',
+            },
+        });
+
+        chartRef.current = chart;
+
+        // 2. Add Volume Series (Histogram) - v5 Syntax
+        const volumeSeries = chart.addSeries(HistogramSeries, {
+            color: '#26a69a',
+            priceFormat: { type: 'volume' },
+            priceScaleId: '', // Overlay mode
+        });
+
+        volumeSeries.priceScale().applyOptions({
+            scaleMargins: { top: 0.85, bottom: 0 },
+        });
+
+        // 3. Add Candlestick Series (Main) - v5 Syntax
+        const candleSeries = chart.addSeries(CandlestickSeries, {
+            upColor: '#10B981',
+            downColor: '#EF4444',
+            borderVisible: false,
+            wickUpColor: '#10B981',
+            wickDownColor: '#EF4444',
+        });
+        candleSeriesRef.current = candleSeries;
+
+        // 4. Format Data
+        const formattedData = data.map(d => ({
+            time: (d.time / 1000) as UTCTimestamp,
+            open: d.open,
+            high: d.high,
+            low: d.low,
+            close: d.close,
+        }));
+
+        const volumeData = data.map(d => ({
+            time: (d.time / 1000) as UTCTimestamp,
+            value: d.volume,
+            color: d.close >= d.open ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)',
+        }));
+
+        candleSeries.setData(formattedData);
+        volumeSeries.setData(volumeData);
+
+        // 5. Add "Live Price" Line
+        candleSeries.createPriceLine({
+            price: lastPrice,
+            color: '#3b82f6',
+            lineWidth: 1,
+            lineStyle: LineStyle.Dotted,
+            axisLabelVisible: true,
+            title: 'CURRENT',
+        });
+
+        // 6. Crosshair Handler
+        chart.subscribeCrosshairMove((param) => {
+            if (param.time) {
+                // In v5, getting data is slightly different, but .get(series) usually works if series matches
+                const data = param.seriesData.get(candleSeries) as any;
+                if (data) setLegend(data);
+            } else {
+                setLegend(data[data.length - 1]);
+            }
+        });
+
+        setLegend(data[data.length - 1]);
+
+        // 7. Handle Resize
+        const handleResize = () => {
+            if (chartContainerRef.current) {
+                chart.applyOptions({
+                    width: chartContainerRef.current.clientWidth,
+                    height: chartContainerRef.current.clientHeight
+                });
+            }
+        };
+
+        window.addEventListener('resize', handleResize);
+
+        return () => {
+            window.removeEventListener('resize', handleResize);
+            chart.remove();
+        };
+    }, [data, lastPrice]);
 
     return (
-        <div className="bg-slate-900 border border-slate-700 p-2 rounded shadow-xl text-xs font-mono">
-            <div className="text-slate-400 mb-1">{format(label, 'MMM dd HH:mm')}</div>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-1">
-                <span className="text-slate-500">O:</span> <span className={isGreen ? 'text-emerald-400' : 'text-red-400'}>{data.open.toFixed(2)}</span>
-                <span className="text-slate-500">H:</span> <span className="text-slate-200">{data.high.toFixed(2)}</span>
-                <span className="text-slate-500">L:</span> <span className="text-slate-200">{data.low.toFixed(2)}</span>
-                <span className="text-slate-500">C:</span> <span className={isGreen ? 'text-emerald-400' : 'text-red-400'}>{data.close.toFixed(2)}</span>
-            </div>
-        </div>
-    )
-}
+        <div className="flex flex-col h-full bg-[#0B0E11] rounded-xl border border-white/5 overflow-hidden shadow-2xl">
 
-export function TradingChart({ data, lastPrice }: { data: Candle[], lastPrice: number }) {
-    const [timeframe, setTimeframe] = useState('15m')
 
-    // Performance: Memoize data transformation
-    // We map the data so Recharts' <Bar> gets [low, high] as the value array
-    // This allows Recharts to calculate the 'y' and 'height' correctly for the full wick range automatically
-    const chartData = useMemo(() => {
-        // Slice data to improve performance if array is massive (optional limit)
-        const visibleData = data.length > 200 ? data.slice(-200) : data
 
-        return visibleData.map(d => ({
-            ...d,
-            range: [d.low, d.high] // Key for Range Bar logic
-        }))
-    }, [data])
+            {/* Chart Area */}
+            <div className="flex-1 relative w-full h-full group">
 
-    // Calculate Min/Max for Y-Axis domain to auto-scale nicely
-    const yDomain = useMemo(() => {
-        if (!chartData.length) return ['auto', 'auto']
-        const lows = chartData.map(d => d.low)
-        const highs = chartData.map(d => d.high)
-        const min = Math.min(...lows)
-        const max = Math.max(...highs)
-        // Add 0.2% padding
-        return [min * 0.998, max * 1.002]
-    }, [chartData])
-
-    return (
-        <div className="flex flex-col h-full bg-[#0B0E11] rounded-xl border border-white/5 overflow-hidden font-sans">
-            {/* Header / Toolbar */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-white/5 bg-[#0f1216]">
-                <div className="flex items-center gap-1">
-                    {['1m', '5m', '15m', '1h', '4h'].map((tf) => (
-                        <button
-                            key={tf}
-                            onClick={() => setTimeframe(tf)}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${timeframe === tf
-                                    ? 'text-blue-400 bg-blue-500/10'
-                                    : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'
-                                }`}
-                        >
-                            {tf}
-                        </button>
-                    ))}
-                    <div className="w-[1px] h-5 bg-white/10 mx-3" />
-                    <button className="flex items-center gap-1.5 text-xs font-medium text-slate-400 hover:text-white px-2 py-1.5 rounded hover:bg-white/5 transition-colors">
-                        <Settings size={14} /> Indicators
-                    </button>
+                {/* Floating Legend */}
+                <div className="absolute top-3 left-4 z-20 pointer-events-none font-mono text-xs">
+                    <div className="flex items-center gap-4 bg-[#0B0E11]/80 backdrop-blur-sm p-2 rounded-lg border border-white/5 shadow-lg">
+                        <div className="flex flex-col">
+                            <span className="text-[10px] text-slate-500 uppercase tracking-wider">Symbol</span>
+                            <span className="font-bold text-white text-sm">BTC/USD</span>
+                        </div>
+                        {legend && (
+                            <>
+                                <div className="flex flex-col">
+                                    <span className="text-[10px] text-slate-500">Open</span>
+                                    <span className={legend.close >= legend.open ? 'text-emerald-400' : 'text-red-400'}>
+                                        {legend.open?.toFixed(2)}
+                                    </span>
+                                </div>
+                                <div className="flex flex-col">
+                                    <span className="text-[10px] text-slate-500">High</span>
+                                    <span className="text-slate-200">{legend.high?.toFixed(2)}</span>
+                                </div>
+                                <div className="flex flex-col">
+                                    <span className="text-[10px] text-slate-500">Low</span>
+                                    <span className="text-slate-200">{legend.low?.toFixed(2)}</span>
+                                </div>
+                                <div className="flex flex-col">
+                                    <span className="text-[10px] text-slate-500">Close</span>
+                                    <span className={legend.close >= legend.open ? 'text-emerald-400' : 'text-red-400'}>
+                                        {legend.close?.toFixed(2)}
+                                    </span>
+                                </div>
+                            </>
+                        )}
+                    </div>
                 </div>
-                <div className="flex items-center gap-3 text-slate-500">
-                    <span className="text-xs font-mono text-slate-400">
-                        Price: <span className="text-white">{lastPrice.toLocaleString()}</span>
+
+                <div ref={chartContainerRef} className="w-full h-full" />
+
+                {/* Live Tag */}
+                <div className="absolute top-3 right-16 flex items-center gap-2 pointer-events-none">
+                    <span className="relative flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                     </span>
-                    <div className="w-[1px] h-4 bg-white/10" />
-                    <button className="hover:text-white transition-colors"><Camera size={16} /></button>
-                    <button className="hover:text-white transition-colors"><Maximize2 size={16} /></button>
+                    <span className="text-[10px] font-bold text-emerald-500 tracking-wider">LIVE</span>
                 </div>
-            </div>
 
-            {/* Chart Canvas */}
-            <div className="flex-1 w-full relative">
-                <ResponsiveContainer width="100%" height="100%">
-                    <ComposedChart data={chartData} margin={{ top: 10, right: 60, bottom: 0, left: 10 }}>
-                        <CartesianGrid
-                            stroke="#1e293b"
-                            strokeDasharray="3 3"
-                            vertical={false}
-                            opacity={0.4}
-                        />
-
-                        <XAxis
-                            dataKey="time"
-                            tickFormatter={(t) => format(t, 'HH:mm')}
-                            axisLine={false}
-                            tickLine={false}
-                            tick={{ fill: '#64748b', fontSize: 11 }}
-                            minTickGap={40}
-                            height={30}
-                        />
-
-                        <YAxis
-                            domain={yDomain}
-                            orientation="right"
-                            axisLine={false}
-                            tickLine={false}
-                            tick={{ fill: '#64748b', fontSize: 11, fontFamily: 'monospace' }}
-                            tickCount={6}
-                            width={60}
-                        />
-
-                        <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#ffffff20', strokeWidth: 1, strokeDasharray: '4 4' }} />
-
-                        {/* Volume Bar (Background) */}
-                        <Bar
-                            dataKey="volume"
-                            yAxisId={0}
-                            fill="#3b82f6"
-                            opacity={0.15}
-                            barSize={4}
-                            isAnimationActive={false} // CRITICAL for performance
-                        />
-
-                        {/* CandleStick Series */}
-                        <Bar
-                            dataKey="range" // Use the computed [low, high] array
-                            shape={<CandleShape />}
-                            barSize={8} // Adjust candle width
-                            isAnimationActive={false} // CRITICAL for performance
-                        />
-
-                        {/* Current Price Line (Dashed) */}
-                        {/* Note: ReferenceLine is better for a static 'lastPrice' across the whole chart */}
-                    </ComposedChart>
-                </ResponsiveContainer>
-
-                {/* Current Price Label on Y-Axis */}
-                <div
-                    className="absolute right-0 bg-blue-600 text-white text-[10px] px-1.5 py-0.5 font-mono rounded-l pointer-events-none"
-                    style={{ top: '30%' }} // Note: In a real app, you'd calculate pixel position or use a ReferenceLine label
-                >
-                    {lastPrice.toFixed(2)}
-                </div>
             </div>
         </div>
-    )
+    );
 }
 
-// React.memo is essential here to prevent chart re-renders when parent state (unrelated to chart) changes
-export default React.memo(TradingChart)
+export default TradingChart;
