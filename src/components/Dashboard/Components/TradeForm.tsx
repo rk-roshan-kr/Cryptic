@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { useDashboardStore } from '../../../store/dashboardStore'
+import { useDashboardStore, OrderType } from '../../../store/dashboardStore'
 import { Toast } from '../../common/Toast'
 import { ChevronDown, HelpCircle, AlertCircle, ChevronsUpDown } from 'lucide-react'
 
@@ -75,17 +75,10 @@ export default function TradeForm({ type = 'SPOT', price }: { type?: 'SPOT' | 'F
         }
 
         placeOrder({
-            id: Math.random().toString(36).substr(2, 9),
-            pair: 'BTC/USDT',
-            type: stopType || orderType as any,
             side,
-            price: orderType === 'MARKET' ? (price || 0) : parseFloat(orderPrice),
+            type: (stopType || orderType) as OrderType,
             amount: parseFloat(amount),
-            filled: 0,
-            total: parseFloat(amount) * (parseFloat(orderPrice) || price || 0),
-            timestamp: Date.now(),
-            status: 'OPEN',
-            leverage // pass leverage from store
+            price: orderType === 'MARKET' ? undefined : parseFloat(orderPrice)
         })
 
         setToast({ show: true, message: `${side} Order Placed Successfully!`, type: 'success' })
